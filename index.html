@@ -61,6 +61,8 @@
   .legend b { color:var(--ink); }
   .legend-point-row { display:flex; align-items:center; gap:7px; margin-top:4px; }
   .legend-point-row .point-icon { flex:0 0 auto; }
+  .cis-status { min-height:16px; margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
+  .cis-cluster { display:flex; align-items:center; justify-content:center; width:100%; height:100%; border-radius:50%; background:#0891b2; border:2px solid #fff; color:#fff; font-size:11px; font-weight:700; box-shadow:0 1px 6px rgba(18,33,47,.4); }
   .zone-legend { display:grid; grid-template-columns:12px auto; align-items:center; gap:4px 7px; margin:8px 0; }
   .zone-swatch { width:12px; height:12px; border:1px solid rgba(23,33,43,.22); border-radius:2px; }
   .zone-2 { background:#2563eb; }
@@ -85,6 +87,7 @@
       <b><span id="addressCount"></span> adresses</b><br>
       <div class="legend-point-row"><span class="point-icon" aria-hidden="true"></span><span>Adresse enregistrée</span></div>
       <div class="legend-point-row"><span class="point-icon" style="--point-color:#7c3aed" aria-hidden="true"></span><span>Adresse importée depuis un CSV</span></div>
+      <div class="legend-point-row"><span class="point-icon" style="--point-color:#0891b2" aria-hidden="true"></span><span>Centre de secours (IGN)</span></div>
       Cercle rouge : rayon réglementaire (2/10/20 km selon la zone Insee) — glisser pour déplacer, tirer le petit point sur le bord pour redimensionner<br>
       Repère vert : adresse recherchée temporairement<br>
       <div class="zone-legend" aria-label="Périmètres réglementaires maximaux">
@@ -103,9 +106,11 @@
       <div class="toolbar">
         <button id="importCsvBtn" type="button">Importer un CSV</button>
         <button id="clearImportBtn" type="button">Vider l'import</button>
+        <button id="toggleCisBtn" type="button" aria-pressed="true" disabled>Masquer les centres</button>
         <input type="file" id="csvFile" accept=".csv" style="display:none">
       </div>
       <div class="import-status" id="importStatus" aria-live="polite"></div>
+      <div class="cis-status" id="cisStatus" aria-live="polite">Chargement des centres de secours…</div>
       <input class="search" id="search" type="search" placeholder="Filtrer ou saisir une autre adresse">
       <div class="search-actions">
         <button id="externalSearch" type="button">Chercher sur la carte</button>
@@ -183,6 +188,8 @@ const importCsvButton = document.getElementById('importCsvBtn');
 const clearImportButton = document.getElementById('clearImportBtn');
 const csvFileInput = document.getElementById('csvFile');
 const importStatusEl = document.getElementById('importStatus');
+const toggleCisButton = document.getElementById('toggleCisBtn');
+const cisStatusEl = document.getElementById('cisStatus');
 const csvMappingDialog = document.getElementById('csvMappingDialog');
 const csvMappingSummary = document.getElementById('csvMappingSummary');
 const csvMappingGrid = document.getElementById('csvMappingGrid');
@@ -191,7 +198,9 @@ const csvMappingError = document.getElementById('csvMappingError');
 const csvMappingCancel = document.getElementById('csvMappingCancel');
 const csvMappingConfirm = document.getElementById('csvMappingConfirm');
 const IMPORT_STORAGE_KEY = 'carte-adresses-import-csv-v1';
-let map, zoneLayer, circleGroup, markerGroup;
+let map, zoneLayer, circleGroup, markerGroup, cisLayer, cisRenderer;
+let cisSites = [];
+let cisVisible = true;
 let activeId = null;
 let externalSearchController = null;
 let searchPins = [];
@@ -265,6 +274,75 @@ async function loadZoneLayer() {
     status.textContent = '';
   } catch (error) {
     status.textContent = 'Zones indisponibles.';
+  }
+}
+function cisPopup(site) {
+  const title = site.name || site.type;
+  const lines = [escapeHtml(site.type)];
+  const location = [site.address, site.city].filter(Boolean).join(' · ');
+  if (location) lines.push(escapeHtml(location));
+  if (site.status && site.status !== 'En service') lines.push('Statut IGN : ' + escapeHtml(site.status));
+  lines.push('Coordonnées : ' + site.lat.toFixed(6) + ', ' + site.lon.toFixed(6));
+  return '<strong class="popup-title">' + escapeHtml(title) + '</strong>' + lines.join('<br>');
+}
+function renderCisSites() {
+  if (!map || !cisLayer || !cisVisible || !cisSites.length) return;
+  cisLayer.clearLayers();
+  const bounds = map.getBounds().pad(0.12);
+  const zoom = map.getZoom();
+  const clusters = new Map();
+  for (const site of cisSites) {
+    if (!bounds.contains([site.lat, site.lon])) continue;
+    if (zoom >= 11) {
+      L.circleMarker([site.lat, site.lon], {
+        pane: 'cisPane', renderer: cisRenderer, radius: 6,
+        color: '#fff', weight: 1.5, fillColor: '#0891b2', fillOpacity: .95
+      }).bindPopup(cisPopup(site)).addTo(cisLayer);
+      continue;
+    }
+    const pixel = map.project([site.lat, site.lon], zoom);
+    const key = Math.floor(pixel.x / 52) + ':' + Math.floor(pixel.y / 52);
+    if (!clusters.has(key)) clusters.set(key, { count: 0, lat: 0, lon: 0, first: site });
+    const cluster = clusters.get(key);
+    cluster.count++;
+    cluster.lat += site.lat;
+    cluster.lon += site.lon;
+  }
+  if (zoom >= 11) return;
+  clusters.forEach(cluster => {
+    if (cluster.count === 1) {
+      const site = cluster.first;
+      L.circleMarker([site.lat, site.lon], {
+        pane: 'cisPane', renderer: cisRenderer, radius: 6,
+        color: '#fff', weight: 1.5, fillColor: '#0891b2', fillOpacity: .95
+      }).bindPopup(cisPopup(site)).addTo(cisLayer);
+      return;
+    }
+    const lat = cluster.lat / cluster.count, lon = cluster.lon / cluster.count;
+    const diameter = Math.min(42, 26 + Math.log10(cluster.count) * 8);
+    const icon = L.divIcon({
+      className: '',
+      html: '<span class="cis-cluster">' + cluster.count + '</span>',
+      iconSize: [diameter, diameter], iconAnchor: [diameter / 2, diameter / 2]
+    });
+    L.marker([lat, lon], { pane: 'cisPane', icon, title: cluster.count + ' centres de secours' })
+      .on('click', () => map.setView([lat, lon], Math.min(zoom + 3, 11), { animate: true }))
+      .addTo(cisLayer);
+  });
+}
+async function loadCisSites() {
+  try {
+    const response = await fetch('centres-secours-ign.json');
+    if (!response.ok) throw new Error('Réponse ' + response.status);
+    const data = await response.json();
+    if (!data || !Array.isArray(data.sites)) throw new Error('Données de centres invalides');
+    cisSites = data.sites.filter(site => Number.isFinite(site.lat) && Number.isFinite(site.lon));
+    cisStatusEl.textContent = cisSites.length.toLocaleString('fr-FR') + ' centres de secours IGN affichés.';
+    toggleCisButton.disabled = false;
+    map.attributionControl.addAttribution('<a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener noreferrer">IGN BD TOPO</a>');
+    renderCisSites();
+  } catch (error) {
+    cisStatusEl.textContent = 'Centres de secours indisponibles.';
   }
 }
 function buildLayers() {
@@ -922,6 +1000,20 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !csvMappingDialog.hidden) csvMappingCancel.click();
 });
 clearImportButton.addEventListener('click', clearImportedPoints);
+toggleCisButton.addEventListener('click', () => {
+  if (!cisLayer || !cisSites.length) return;
+  cisVisible = !cisVisible;
+  toggleCisButton.textContent = cisVisible ? 'Masquer les centres' : 'Afficher les centres';
+  toggleCisButton.setAttribute('aria-pressed', String(cisVisible));
+  if (cisVisible) {
+    cisLayer.addTo(map);
+    renderCisSites();
+  } else {
+    map.removeLayer(cisLayer);
+    cisLayer.clearLayers();
+  }
+  cisStatusEl.textContent = cisSites.length.toLocaleString('fr-FR') + ' centres de secours IGN ' + (cisVisible ? 'affichés.' : 'masqués.');
+});
 radiusPresetsEl.querySelectorAll('button[data-km]').forEach(btn => {
   btn.addEventListener('click', () => setCircleDistanceKm(Number(btn.dataset.km)));
 });
@@ -934,8 +1026,14 @@ if (!window.L) {
   map.createPane('zonePane');
   map.getPane('zonePane').style.zIndex = 250;
   map.getPane('zonePane').style.pointerEvents = 'none';
+  map.createPane('cisPane');
+  map.getPane('cisPane').style.zIndex = 430;
   loadZoneLayer();
   circleGroup = L.layerGroup().addTo(map);
+  cisLayer = L.layerGroup().addTo(map);
+  cisRenderer = L.canvas({ pane: 'cisPane', padding: .5 });
+  map.on('moveend zoomend', renderCisSites);
+  loadCisSites();
   markerGroup = L.layerGroup().addTo(map);
   buildLayers();
   loadImportedPoints();
