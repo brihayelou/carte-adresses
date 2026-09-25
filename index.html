@@ -15,19 +15,29 @@
   #map { position:absolute; inset:0; width:100%; height:100%; }
   .leaflet-container { width:100%; height:100%; }
   .sidebar { background:var(--panel); border-left:1px solid var(--line); height:100vh; min-height:0; display:flex; flex-direction:column; z-index:500; overflow:hidden; }
-  .top { padding:18px 18px 14px; border-bottom:1px solid var(--line); }
-  h1 { margin:0 0 8px; font-size:20px; line-height:1.2; }
+  .top { position:relative; padding:18px 18px 14px; border-bottom:1px solid var(--line); }
+  h1 { margin:0 0 8px; padding-right:42px; font-size:20px; line-height:1.2; }
+  .central-list-toggle { position:absolute; top:13px; right:14px; width:34px; min-height:32px; padding:0; font-size:23px; line-height:1; }
+  .central-list-toggle.active { background:#eef3f7; border-color:#8da2b5; }
   .summary { color:var(--muted); margin:0; font-size:13px; line-height:1.45; }
   .toolbar { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
   .import-status { min-height:16px; margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
   .csv-dialog-backdrop { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(17,24,39,.55); }
   .csv-dialog-backdrop[hidden] { display:none; }
-  .csv-dialog { width:min(760px,100%); max-height:min(820px,92vh); overflow:auto; background:#fff; border-radius:10px; box-shadow:0 18px 55px rgba(17,24,39,.3); padding:20px; }
+  .csv-dialog { width:min(1120px,100%); max-height:min(820px,92vh); overflow:auto; background:#fff; border-radius:10px; box-shadow:0 18px 55px rgba(17,24,39,.3); padding:20px; }
   .csv-dialog h2 { margin:0 0 6px; font-size:19px; }
   .csv-dialog p { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.45; }
-  .csv-mapping-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
-  .csv-mapping-grid label { display:grid; gap:5px; color:var(--ink); font-size:12px; font-weight:650; }
-  .csv-mapping-grid select { width:100%; min-height:36px; border:1px solid var(--line); border-radius:6px; padding:0 8px; background:#fff; font:inherit; font-weight:400; }
+  .csv-mapping-grid { width:100%; overflow:auto; border:1px solid var(--line); border-radius:7px; }
+  .csv-review-table { width:100%; min-width:max-content; border-collapse:collapse; font-size:12px; }
+  .csv-review-table th,.csv-review-table td { min-width:180px; max-width:260px; padding:7px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); text-align:left; }
+  .csv-review-table th:last-child,.csv-review-table td:last-child { border-right:0; }
+  .csv-review-table tbody tr:last-child td { border-bottom:0; }
+  .csv-review-table th { position:sticky; top:0; z-index:1; background:#f3f6f8; vertical-align:top; }
+  .csv-review-table select { width:100%; min-height:34px; border:1px solid #9ca9b7; border-radius:6px; padding:0 7px; background:#fff; font:inherit; font-weight:650; }
+  .csv-review-table .csv-tariff-unit { margin-top:6px; font-weight:500; }
+  .csv-review-table .csv-tariff-unit[hidden] { display:none; }
+  .csv-source-title { display:block; margin-top:6px; color:var(--muted); font-size:11px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .csv-review-table td { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .csv-preview { width:100%; margin-top:16px; border-collapse:collapse; font-size:11px; }
   .csv-preview th,.csv-preview td { max-width:180px; padding:6px; border:1px solid var(--line); text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .csv-preview th { background:#f3f6f8; }
@@ -47,20 +57,55 @@
   .circle-status { min-height:18px; margin-top:10px; color:var(--muted); font-size:12px; line-height:1.4; }
   .circle-status button { border:0; background:none; min-height:auto; color:var(--accent); cursor:pointer; font:inherit; padding:0; text-decoration:underline; }
   .circle-status button:hover { background:none; }
+  .circle-totals { margin-top:7px; display:grid; gap:2px; color:var(--ink); }
   .radius-presets { display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .radius-presets-label { font-size:12px; color:var(--muted); }
   .radius-presets button { min-height:26px; padding:0 10px; font-size:12px; }
   .radius-presets button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   .radius-presets button:disabled { opacity:.45; cursor:not-allowed; }
   .list { overflow:auto; padding:8px; }
+  .list-row { display:flex; align-items:stretch; gap:4px; }
+  .list-row .item { flex:1; min-width:0; }
+  .edit-central { align-self:center; flex:0 0 auto; min-height:28px; padding:0 7px; font-size:11px; }
+  .remove-address { align-self:center; flex:0 0 30px; min-height:30px; padding:0; border:0; background:transparent; color:var(--muted); font-size:20px; line-height:1; }
+  .remove-address:hover { color:#b42318; background:#fef0ee; }
+  .address-status { min-height:16px; margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
+  .address-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
+  .address-form-grid label { display:grid; gap:5px; color:var(--ink); font-size:12px; font-weight:650; }
+  .address-form-grid label:first-child { grid-column:1/-1; }
+  .address-form-grid input,.address-form-grid select { width:100%; min-height:36px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:#fff; font:inherit; font-weight:400; }
   .item { width:100%; display:block; text-align:left; border:0; background:transparent; border-radius:6px; padding:9px 10px; cursor:pointer; }
   .item:hover, .item.active { background:#eef3f7; }
   .addr { font-size:13px; font-weight:650; line-height:1.28; }
   .meta { margin-top:3px; font-size:12px; color:var(--muted); line-height:1.25; }
   .legend { position:absolute; left:14px; bottom:22px; background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:12px; color:var(--muted); box-shadow:0 2px 10px rgba(18,33,47,.12); z-index:450; max-width:260px; }
   .legend b { color:var(--ink); }
-  .legend-point-row { display:flex; align-items:center; gap:7px; margin-top:4px; }
-  .legend-point-row .point-icon { flex:0 0 auto; }
+  .legend-point-row { display:flex; align-items:center; gap:7px; margin-top:4px; line-height:1.3; }
+  .legend-symbol { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 18px; }
+  .cis-triangle { position:relative; display:block; width:18px; height:18px; background:#fff; clip-path:polygon(50% 0,0 100%,100% 100%); }
+  .cis-triangle::after { content:''; position:absolute; inset:3px 3px 2px; background:#ea580c; clip-path:polygon(50% 0,0 100%,100% 100%); }
+  .legend-circle { width:17px; height:17px; border:2px solid rgba(216,59,53,.62); border-radius:50%; background:rgba(216,59,53,.14); }
+  .legend-map { width:17px; height:17px; border:1px solid #9aa5ae; border-radius:2px; background:linear-gradient(35deg,transparent 40%,#fff 41% 55%,transparent 56%),linear-gradient(125deg,transparent 44%,#fff 45% 57%,transparent 58%),#dbe7d5; }
+  .legend-note { display:block; margin-top:2px; font-size:11px; }
+  .cis-status { min-height:16px; margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
+  .cis-cluster { position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:100%; padding-top:7px; background:#fff; clip-path:polygon(50% 0,0 100%,100% 100%); }
+  .cis-cluster::before { content:''; position:absolute; inset:3px 3px 2px; background:#ea580c; clip-path:polygon(50% 0,0 100%,100% 100%); }
+  .cis-cluster-count { position:relative; z-index:1; color:#fff; font-size:11px; font-weight:700; }
+  .list-context { padding:7px 10px 9px; color:var(--muted); font-size:12px; border-bottom:1px solid var(--line); }
+  .management-panel { position:fixed; z-index:1600; top:12px; right:372px; bottom:12px; width:min(480px,calc(100vw - 396px)); display:flex; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 14px 45px rgba(17,24,39,.25); overflow:hidden; }
+  .management-panel[hidden] { display:none; }
+  .management-head { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .management-head h2 { flex:1; margin:0; font-size:18px; }
+  .management-head button { min-height:30px; }
+  .management-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px 0; }
+  .management-tabs button.active { color:#fff; background:var(--accent); border-color:var(--accent); }
+  .management-actions { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .management-list { flex:1; min-height:0; overflow:auto; padding:8px; }
+  .management-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; align-items:center; gap:6px; padding:6px 4px; border-bottom:1px solid #edf0f3; }
+  .management-row .item { min-width:0; }
+  .management-empty { padding:20px 12px; color:var(--muted); text-align:center; }
+  .consumer-select { width:18px; height:18px; }
+  .acc-allocation[hidden] { display:none; }
   .zone-legend { display:grid; grid-template-columns:12px auto; align-items:center; gap:4px 7px; margin:8px 0; }
   .zone-swatch { width:12px; height:12px; border:1px solid rgba(23,33,43,.22); border-radius:2px; }
   .zone-2 { background:#2563eb; }
@@ -70,11 +115,14 @@
   .popup-title { display:block; font-size:13px; margin-bottom:6px; color:var(--ink); }
   .point-icon { width:10px; height:10px; border-radius:50%; background:var(--point-color, var(--accent)); border:2px solid #fff; box-shadow:0 1px 5px rgba(18,33,47,.35); }
   .point-icon.active { width:13px; height:13px; background:#111827; }
+  .point-icon.in-circle { width:13px; height:13px; background:#2563eb; box-shadow:0 0 0 2px rgba(37,99,235,.22),0 1px 5px rgba(18,33,47,.35); }
+  .point-icon.consumer.in-circle { background:#0891b2; box-shadow:0 0 0 2px rgba(8,145,178,.24),0 1px 5px rgba(18,33,47,.35); }
+  .point-icon.acc { border-color:#0f766e; box-shadow:0 0 0 2px #0f766e,0 1px 5px rgba(18,33,47,.35); }
   .search-icon { width:16px; height:16px; border-radius:50%; background:#16a34a; border:3px solid #fff; box-shadow:0 1px 8px rgba(18,33,47,.4); }
   .resize-handle { width:12px; height:12px; border-radius:50%; background:#fff; border:2px solid var(--accent); box-shadow:0 1px 4px rgba(18,33,47,.5); cursor:nwse-resize; }
   .leaflet-interactive.active-circle { cursor:move; }
   .offline { padding:24px; background:#fff; margin:16px; border-radius:8px; border:1px solid var(--line); max-width:520px; }
-  @media (max-width:820px) { body { overflow:auto; } main { height:100vh; grid-template-columns:1fr; grid-template-rows:68vh 32vh; } #mapWrap,#map { height:68vh; } .sidebar { height:32vh; border-left:0; border-top:1px solid var(--line); } .top { padding:12px; } h1 { font-size:17px; } .legend { display:none; } }
+  @media (max-width:820px) { body { overflow:auto; } main { height:100vh; grid-template-columns:1fr; grid-template-rows:68vh 32vh; } #mapWrap,#map { height:68vh; } .sidebar { height:32vh; border-left:0; border-top:1px solid var(--line); } .top { padding:12px; } h1 { font-size:17px; } .legend { display:none; } .management-panel { inset:10px; width:auto; } }
 </style>
 </head>
 <body>
@@ -83,29 +131,34 @@
     <div id="map"></div>
     <div class="legend">
       <b><span id="addressCount"></span> adresses</b><br>
-      <div class="legend-point-row"><span class="point-icon" aria-hidden="true"></span><span>Adresse enregistrée</span></div>
-      <div class="legend-point-row"><span class="point-icon" style="--point-color:#7c3aed" aria-hidden="true"></span><span>Adresse importée depuis un CSV</span></div>
-      Cercle rouge : rayon réglementaire (2/10/20 km selon la zone Insee) — glisser pour déplacer, tirer le petit point sur le bord pour redimensionner<br>
-      Repère vert : adresse recherchée temporairement<br>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon"></span></span><span>Adresse enregistrée</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon in-circle"></span></span><span>Centrale productrice comptée</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon consumer in-circle"></span></span><span>Site consommateur compté</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon acc"></span></span><span>Centrale déjà en boucle ACC</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon" style="--point-color:#7c3aed"></span></span><span>Adresse importée depuis un CSV</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="cis-triangle"></span></span><span>Centre de secours (IGN)</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="legend-circle"></span></span><span>Rayon réglementaire (2/10/20 km selon la zone Insee)<span class="legend-note">Glisser pour déplacer ; tirer le point du bord pour redimensionner.</span></span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="search-icon"></span></span><span>Adresse recherchée temporairement</span></div>
       <div class="zone-legend" aria-label="Périmètres réglementaires maximaux">
         <span class="zone-swatch zone-2"></span><span>Zone 2 km</span>
         <span class="zone-swatch zone-10"></span><span>Zone 10 km</span>
         <span class="zone-swatch zone-20"></span><span>Zone 20 km</span>
       </div>
-      Fond : OpenStreetMap
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="legend-map"></span></span><span>Fond de carte OpenStreetMap</span></div>
       <div class="zone-status" id="zoneStatus">Chargement des zones…</div>
     </div>
   </section>
   <aside class="sidebar">
     <div class="top">
       <h1>Carte des adresses</h1>
-      <p class="summary">Filtre les points existants ou saisis une autre adresse, puis clique sur « Chercher sur la carte » pour la situer par rapport aux points et au cercle réglementaire.</p>
+      <button class="central-list-toggle" id="centralListToggle" type="button" aria-label="Ouvrir la gestion des sites" aria-expanded="false" aria-controls="managementPanel" title="Ouvrir la gestion des sites">⋯</button>
+      <p class="summary">Sélectionne un point ou cherche une adresse pour afficher le cercle et les sites proches. Le bouton « ⋯ » ouvre la liste complète des centrales et leur modification.</p>
       <div class="toolbar">
-        <button id="importCsvBtn" type="button">Importer un CSV</button>
-        <button id="clearImportBtn" type="button">Vider l'import</button>
-        <input type="file" id="csvFile" accept=".csv" style="display:none">
+        <button id="toggleCisBtn" type="button" aria-pressed="true" disabled>Masquer les centres</button>
       </div>
       <div class="import-status" id="importStatus" aria-live="polite"></div>
+      <div class="address-status" id="addressStatus" aria-live="polite"></div>
+      <div class="cis-status" id="cisStatus" aria-live="polite">Chargement des centres de secours…</div>
       <input class="search" id="search" type="search" placeholder="Filtrer ou saisir une autre adresse">
       <div class="search-actions">
         <button id="externalSearch" type="button">Chercher sur la carte</button>
@@ -124,6 +177,78 @@
     <div id="list" class="list"></div>
   </aside>
 </main>
+<section class="management-panel" id="managementPanel" aria-labelledby="managementTitle" hidden>
+  <div class="management-head"><h2 id="managementTitle">Gestion des sites</h2><button id="managementClose" type="button" aria-label="Fermer">Fermer</button></div>
+  <div class="management-tabs" role="tablist">
+    <button id="producerTab" type="button" class="active" role="tab" aria-selected="true">Sites producteurs</button>
+    <button id="consumerTab" type="button" role="tab" aria-selected="false">Sites consommateurs</button>
+  </div>
+  <div class="management-actions" id="producerActions"><button id="addAddressBtn" type="button">Ajouter une centrale</button></div>
+  <div class="management-actions" id="consumerActions" hidden>
+    <button id="addConsumerBtn" type="button">Ajouter un site</button>
+    <button id="importCsvBtn" type="button">Importer un CSV</button>
+    <button id="deleteSelectedConsumers" type="button">Supprimer la sélection</button>
+    <button id="clearImportBtn" type="button">Tout supprimer</button>
+    <input type="file" id="csvFile" accept=".csv" style="display:none">
+  </div>
+  <div id="managementList" class="management-list"></div>
+</section>
+<div class="csv-dialog-backdrop" id="addressDialog" hidden>
+  <form class="csv-dialog" id="addressForm" role="dialog" aria-modal="true" aria-labelledby="addressDialogTitle">
+    <h2 id="addressDialogTitle">Ajouter une centrale</h2>
+    <p>La centrale sera localisée par son adresse puis ajoutée à la liste et à la carte dans ce navigateur.</p>
+    <div class="address-form-grid">
+      <label>Adresse complète *<input name="address" autocomplete="street-address" required placeholder="Numéro, rue, code postal et ville"></label>
+      <label>Nom du projet<input name="project" placeholder="Facultatif"></label>
+      <label>Société / SPV<input name="spv" placeholder="Facultatif"></label>
+      <label>Production annuelle (kWh)<input name="annualKwh" inputmode="decimal" placeholder="Facultatif"></label>
+      <label>Tarif (€/MWh)<input name="tariff" inputmode="decimal" placeholder="Facultatif"></label>
+    </div>
+    <div class="csv-dialog-error" id="addressFormError" aria-live="polite"></div>
+    <div class="csv-dialog-actions">
+      <button type="button" id="addressCancel">Annuler</button>
+      <button type="submit" class="primary" id="addressSave">Ajouter sur la carte</button>
+    </div>
+  </form>
+</div>
+<div class="csv-dialog-backdrop" id="editCentralDialog" hidden>
+  <form class="csv-dialog" id="editCentralForm" role="dialog" aria-modal="true" aria-labelledby="editCentralTitle">
+    <h2 id="editCentralTitle">Modifier une centrale</h2>
+    <p>Les modifications sont conservées dans ce navigateur.</p>
+    <div class="address-form-grid">
+      <label>Adresse complète *<input name="address" autocomplete="street-address" required></label>
+      <label>Nom du projet *<input name="project" required></label>
+      <label>Société / SPV<input name="spv"></label>
+      <label>Production annuelle (kWh)<input name="annualKwh" inputmode="decimal"></label>
+      <label>Tarif (€/MWh)<input name="tariff" inputmode="decimal"></label>
+      <label>Déjà dans une boucle ACC ?<select name="accStatus"><option value="">À renseigner</option><option value="yes">Oui</option><option value="no">Non</option></select></label>
+      <label class="acc-allocation" id="accAllocationField" hidden>Production affectée à la boucle ACC (kWh) *<input name="accAllocatedKwh" inputmode="decimal"></label>
+    </div>
+    <div class="csv-dialog-error" id="editCentralError" aria-live="polite"></div>
+    <div class="csv-dialog-actions">
+      <button type="button" id="editCentralCancel">Annuler</button>
+      <button type="submit" class="primary" id="editCentralSave">Enregistrer</button>
+    </div>
+  </form>
+</div>
+<div class="csv-dialog-backdrop" id="consumerDialog" hidden>
+  <form class="csv-dialog" id="consumerForm" role="dialog" aria-modal="true" aria-labelledby="consumerDialogTitle">
+    <h2 id="consumerDialogTitle">Ajouter un site consommateur</h2>
+    <p>Les informations seront enregistrées dans ce navigateur et ajoutées à la carte.</p>
+    <div class="address-form-grid">
+      <label>Adresse complète *<input name="address" autocomplete="street-address" required></label>
+      <label>Nom du site<input name="project" placeholder="Facultatif"></label>
+      <label>Consommation globale (kWh)<input name="consumptionKwh" inputmode="decimal"></label>
+      <label>Tarif moyen global (€/MWh)<input name="tariff" inputmode="decimal"></label>
+      <label>Consommation pendant les heures de production (kWh)<input name="consumptionProductionHoursKwh" inputmode="decimal"></label>
+      <label>Tarif moyen pendant les heures de production (€/MWh)<input name="tariffProductionHours" inputmode="decimal"></label>
+      <label>Consommation hors heures de production (kWh)<input name="consumptionOffHoursKwh" inputmode="decimal"></label>
+      <label>Tarif moyen hors heures de production (€/MWh)<input name="tariffOffHours" inputmode="decimal"></label>
+    </div>
+    <div class="csv-dialog-error" id="consumerFormError" aria-live="polite"></div>
+    <div class="csv-dialog-actions"><button type="button" id="consumerCancel">Annuler</button><button type="submit" class="primary" id="consumerSave">Enregistrer</button></div>
+  </form>
+</div>
 <div class="csv-dialog-backdrop" id="csvMappingDialog" hidden>
   <section class="csv-dialog" role="dialog" aria-modal="true" aria-labelledby="csvMappingTitle">
     <h2 id="csvMappingTitle">Associer les colonnes du CSV</h2>
@@ -138,6 +263,7 @@
   </section>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="pipeline-kwh.js"></script>
 <script>
 const points = [{"id":1,"address":"1 rue Mirabeau 62410 Meurchin","lat":50.489198,"lon":2.896,"score":0.9568954545454545,"matched":"1 Rue Mirabeau 62410 Meurchin","type":"housenumber","postcode":"62410","city":"Meurchin","source":"adresses utf.csv","citycode":"62573"},{"id":2,"address":"Chemin le Gérome 60350 Trosly Breuil","lat":49.398274,"lon":2.971179,"score":0.6515145454545455,"matched":"Rue du Géromé 60350 Trosly-Breuil","type":"street","postcode":"60350","city":"Trosly-Breuil","source":"adresses utf.csv","citycode":"60647"},{"id":3,"address":"Impasse des fonds de Boissy 78121 Crespières","lat":48.876103,"lon":1.893876,"score":0.9442681818181816,"matched":"Impasse des Fonds de Boissy 78121 Crespières","type":"street","postcode":"78121","city":"Crespières","source":"adresses utf.csv","citycode":"78189"},{"id":4,"address":"rue du Calvaire 62112 Gouy sous Bellonne","lat":50.311814,"lon":3.051242,"score":0.9510563636363636,"matched":"Rue du Calvaire 62112 Gouy-sous-Bellonne","type":"street","postcode":"62112","city":"Gouy-sous-Bellonne","source":"adresses utf.csv","citycode":"62383"},{"id":5,"address":"280 Rue de Beaumetz 59310 Saméon","lat":50.464059,"lon":3.343353,"score":0.8413243108504398,"matched":"Rue de Beaumetz 59310 Saméon","type":"street","postcode":"59310","city":"Saméon","source":"adresses utf.csv","citycode":"59551"},{"id":6,"address":"Route de Loffre  59187 Dechy","lat":50.361953,"lon":3.138077,"score":0.9530990909090907,"matched":"Route de Loffre 59187 Dechy","type":"street","postcode":"59187","city":"Dechy","source":"adresses utf.csv","citycode":"59170"},{"id":7,"address":"Hameau de Baily 45370 Mézières les Clery","lat":47.811504,"lon":1.821231,"score":0.6956721212121211,"matched":"Haras de Bailly 45370 Mézières-lez-Cléry","type":"locality","postcode":"45370","city":"Mézières-lez-Cléry","source":"adresses utf.csv","citycode":"45204"},{"id":8,"address":"8 rue d'Ully st georges 60250 Balagny sur Therain","lat":49.29993,"lon":2.305162,"score":0.7622985714285714,"matched":"8 Route d’Ully Saint Georges 60250 Balagny-sur-Thérain","type":"housenumber","postcode":"60250","city":"Balagny-sur-Thérain","source":"adresses utf.csv","citycode":"60044"},{"id":9,"address":"Ferme de la Maladerie 59235 Bersée","lat":50.492737,"lon":3.136943,"score":0.9424736363636362,"matched":"Ferme de la Maladerie 59235 Bersée","type":"street","postcode":"59235","city":"Bersée","source":"adresses utf.csv","citycode":"59071"},{"id":10,"address":"5 rue de Chéreng 59780 Willems","lat":50.626455,"lon":3.217986,"score":0.9485481818181818,"matched":"5 Rue de Chéreng 59780 Willems","type":"housenumber","postcode":"59780","city":"Willems","source":"adresses utf.csv","citycode":"59660"},{"id":11,"address":"9  rue Marius Thilly  62800 Liévin","lat":50.435883,"lon":2.74489,"score":0.9710518181818181,"matched":"9 Rue Marius Thilly 62800 Liévin","type":"housenumber","postcode":"62800","city":"Liévin","source":"adresses utf.csv","citycode":"62510"},{"id":12,"address":"Route de Fleury 02600 Dampleux","lat":49.244853,"lon":3.153429,"score":0.9398581818181817,"matched":"Route de Fleury 02600 Dampleux","type":"street","postcode":"02600","city":"Dampleux","source":"adresses utf.csv","citycode":"02259"},{"id":13,"address":"3078 route de Cormeilles 14130 St Julien les Calonnes","lat":49.28102,"lon":0.243968,"score":0.7312142424242425,"matched":"3078 Route de Cormeilles 14130 Saint-Julien-sur-Calonne","type":"housenumber","postcode":"14130","city":"Saint-Julien-sur-Calonne","source":"adresses utf.csv","citycode":"14601"},{"id":14,"address":"4 rue de la ferme des briques 62138 Auchy les mines","lat":50.509592,"lon":2.775822,"score":0.95336,"matched":"4 Rue de la Ferme des Briques 62138 Auchy-les-Mines","type":"housenumber","postcode":"62138","city":"Auchy-les-Mines","source":"adresses utf.csv","citycode":"62051"},{"id":15,"address":"1 Rue de la Neuve Voie 59320 Haubourdain","lat":50.587548,"lon":2.992232,"score":0.6708006293706292,"matched":"1 Rue de la Neuve Voie 59320 Emmerin","type":"housenumber","postcode":"59320","city":"Emmerin","source":"adresses utf.csv","citycode":"59193"},{"id":16,"address":"4 Rue de Gouy 62130 Mont en Ternois","lat":50.321056,"lon":2.386546,"score":0.8596233333333333,"matched":"4 Rue de Gouy 62130 Monts-en-Ternois","type":"housenumber","postcode":"62130","city":"Monts-en-Ternois","source":"adresses utf.csv","citycode":"62590"},{"id":17,"address":"4 Rue de Gouy 62130 Mont en Ternois","lat":50.321056,"lon":2.386546,"score":0.8596233333333333,"matched":"4 Rue de Gouy 62130 Monts-en-Ternois","type":"housenumber","postcode":"62130","city":"Monts-en-Ternois","source":"adresses utf.csv","citycode":"62590"},{"id":18,"address":"17 chemin du Meulengracht 59630 Bourbourg","lat":50.933098,"lon":2.181113,"score":0.8897336363636363,"matched":"Chemin du Meulengracht 59630 Bourbourg","type":"street","postcode":"59630","city":"Bourbourg","source":"adresses utf.csv","citycode":"59094"},{"id":19,"address":"34 rue Michel Beyaert 59310 Nomain","lat":50.486258,"lon":3.234929,"score":0.9522418181818181,"matched":"34 Rue Michel Beyaert 59310 Nomain","type":"housenumber","postcode":"59310","city":"Nomain","source":"adresses utf.csv","citycode":"59435"},{"id":20,"address":"Rue des Hallots 62160 Bully les Mines","lat":50.452244,"lon":2.714308,"score":0.8168157293868922,"matched":"Rue des Quatre Hallots 62160 Bully-les-Mines","type":"street","postcode":"62160","city":"Bully-les-Mines","source":"adresses utf.csv","citycode":"62186"},{"id":21,"address":"60 rue de la Liberté 59264 Onnaing","lat":50.388197,"lon":3.591739,"score":0.9638999999999999,"matched":"60 Rue de la Liberté 59264 Onnaing","type":"housenumber","postcode":"59264","city":"Onnaing","source":"adresses utf.csv","citycode":"59447"},{"id":22,"address":"Ferme de stemberg 62500 Clairmarais","lat":50.773731,"lon":2.383149,"score":0.7688304306220094,"matched":"Ferme du Stremberg 62500 Clairmarais","type":"locality","postcode":"62500","city":"Clairmarais","source":"adresses utf.csv","citycode":"62225"},{"id":23,"address":"535 rue des Malades 59550 Maroilles","lat":50.128477,"lon":3.752731,"score":0.9471945454545454,"matched":"535 Rue des Malades 59550 Maroilles","type":"housenumber","postcode":"59550","city":"Maroilles","source":"adresses utf.csv","citycode":"59384"},{"id":24,"address":"1 rue des Chênes 62350 Mont Bernanchon","lat":50.586208,"lon":2.62013,"score":0.8957626781326781,"matched":"Rue des Chênes 62350 Mont-Bernanchon","type":"street","postcode":"62350","city":"Mont-Bernanchon","source":"adresses utf.csv","citycode":"62584"},{"id":25,"address":"19 rue Martin Hayer 59273 Fretin","lat":50.556154,"lon":3.145209,"score":0.7489077922077922,"matched":"19 Rue Martin Havez 59273 Fretin","type":"housenumber","postcode":"59273","city":"Fretin","source":"adresses utf.csv","citycode":"59256"},{"id":26,"address":"1082 Rue Nationale 59710 Mérignies","lat":50.505488,"lon":3.124282,"score":0.9635263636363636,"matched":"1082 Rue Nationale 59710 Mérignies","type":"housenumber","postcode":"59710","city":"Mérignies","source":"adresses utf.csv","citycode":"59398"},{"id":27,"address":"9T rue du 19 Mars 1962  62320 Drocourt","lat":50.392828,"lon":2.924439,"score":0.8772460606060605,"matched":"9ter Rue du 19 Mars 1962 62320 Drocourt","type":"housenumber","postcode":"62320","city":"Drocourt","source":"adresses utf.csv","citycode":"62277"},{"id":28,"address":"10 Rue Auguste Dupin 94520 Mandres les Roses","lat":48.711759,"lon":2.548265,"score":0.954401818181818,"matched":"10 Rue Auguste Dupin 94520 Mandres-les-Roses","type":"housenumber","postcode":"94520","city":"Mandres-les-Roses","source":"adresses utf.csv","citycode":"94047"},{"id":29,"address":"1 chemin de la Pluette 78860 St Nom la Brétèche","lat":48.869118,"lon":2.005796,"score":0.8236545454545454,"matched":"Chemin de la Pluette 78860 Saint-Nom-la-Bretèche","type":"street","postcode":"78860","city":"Saint-Nom-la-Bretèche","source":"adresses utf.csv","citycode":"78571"},{"id":30,"address":"2670 Route d'Avesnes 59620 Monceau st Waast","lat":50.161895,"lon":3.873877,"score":0.851445770750988,"matched":"2670 Route d'Avesnes 59620 Monceau-Saint-Waast","type":"housenumber","postcode":"59620","city":"Monceau-Saint-Waast","source":"adresses utf.csv","citycode":"59406"},{"id":31,"address":"100 Ruelle du Herlin 62700 Bruay la Buissière","lat":50.500129,"lon":2.564163,"score":0.9567418181818181,"matched":"100 Ruelle du Herlin 62700 Bruay-la-Buissière","type":"housenumber","postcode":"62700","city":"Bruay-la-Buissière","source":"adresses utf.csv","citycode":"62178"},{"id":32,"address":"2 rue de Fiers 59380 Armbouts Cappell","lat":50.972501,"lon":2.373761,"score":0.7188681818181818,"matched":"2 Route Fiers 59380 Armbouts-Cappel","type":"housenumber","postcode":"59380","city":"Armbouts-Cappel","source":"adresses utf.csv","citycode":"59016"},{"id":33,"address":"Ferme de Berthonval 62144 Mont st Eloi","lat":50.353505,"lon":2.716225,"score":0.7734698347107437,"matched":"La Ferme de Berthonval 62144 Mont-Saint-Éloi","type":"locality","postcode":"62144","city":"Mont-Saint-Éloi","source":"adresses utf.csv","citycode":"62589"},{"id":34,"address":"3 Rue du Moulin 59135-Bellaing","lat":50.365962,"lon":3.433799,"score":0.7942422077922078,"matched":"3 Rue du Petit Moulin 59135 Bellaing","type":"housenumber","postcode":"59135","city":"Bellaing","source":"adresses utf.csv","citycode":"59064"},{"id":35,"address":"68 Rue Pierre Semard 59211 Santes","lat":50.584104,"lon":2.956787,"score":0.9595318181818181,"matched":"68 Rue Pierre Semard 59211 Santes","type":"housenumber","postcode":"59211","city":"Santes","source":"adresses utf.csv","citycode":"59553"},{"id":36,"address":"230 Rue de la Vieille Colme 59630 Looberghe","lat":50.913464,"lon":2.241621,"score":0.942741818181818,"matched":"230 Rue de la Vieille Colme 59630 Looberghe","type":"housenumber","postcode":"59630","city":"Looberghe","source":"adresses utf.csv","citycode":"59358"},{"id":37,"address":"1 rue Calmette 59400 Awoingt","lat":50.15841,"lon":3.27884,"score":0.6876461038961038,"matched":"Rue Docteur Calmette 59400 Awoingt","type":"street","postcode":"59400","city":"Awoingt","source":"adresses utf.csv","citycode":"59039"},{"id":38,"address":"10 Route du Bois 14490 Le Tronquay","lat":49.221348,"lon":-0.797844,"score":0.9450754545454544,"matched":"10 Route du Bois 14490 Le Tronquay","type":"housenumber","postcode":"14490","city":"Le Tronquay","source":"adresses utf.csv","citycode":"14714"},{"id":39,"address":"1027 Route de Comines à Wambrechies 59560 Comines","lat":50.725519,"lon":3.020549,"score":0.7069692691622103,"matched":"1027 Route de Comines à Wambrechies 59890 Quesnoy-sur-Deûle","type":"housenumber","postcode":"59890","city":"Quesnoy-sur-Deûle","source":"adresses utf.csv","citycode":"59482"},{"id":40,"address":"154B Route Nationale 62980 Vermelles","lat":50.475292,"lon":2.741984,"score":0.8703698564593301,"matched":"154bis Route Nationale 62980 Vermelles","type":"housenumber","postcode":"62980","city":"Vermelles","source":"adresses utf.csv","citycode":"62846"},{"id":41,"address":"2222 Route de Bures 76270 Fresles","lat":49.760266,"lon":1.340303,"score":0.939181818181818,"matched":"2222 Route de Bures 76270 Fresles","type":"housenumber","postcode":"76270","city":"Fresles","source":"adresses utf.csv","citycode":"76283"},{"id":42,"address":"1 Route de Saint-Benoît-d'Hébertot 14130 St Gatien des Bois","lat":49.346284,"lon":0.199747,"score":0.8772062170087976,"matched":"1 Route de Saint-Benoît-d'Hébertot 14130 Saint-Gatien-des-Bois","type":"housenumber","postcode":"14130","city":"Saint-Gatien-des-Bois","source":"adresses utf.csv","citycode":"14578"},{"id":43,"address":"2 Chemin des Marnieres 28260 Rouvres","lat":48.817503,"lon":1.488711,"score":0.9426545454545454,"matched":"2 Chemin des Marnières 28260 Rouvres","type":"housenumber","postcode":"28260","city":"Rouvres","source":"adresses utf.csv","citycode":"28321"},{"id":44,"address":"1 Allée des Cavaliers 91650 St Yon","lat":48.552311,"lon":2.178876,"score":0.8222835135135135,"matched":"1 Allée des Cavaliers 91650 Saint-Yon","type":"housenumber","postcode":"91650","city":"Saint-Yon","source":"adresses utf.csv","citycode":"91581"},{"id":45,"address":"1 rue Mirabeau 62410 Meurchin","lat":50.489198,"lon":2.896,"score":0.9568954545454545,"matched":"1 Rue Mirabeau 62410 Meurchin","type":"housenumber","postcode":"62410","city":"Meurchin","source":"adresses utf.csv","citycode":"62573"},{"id":46,"address":"11 Lieu Dit Le Haras De Beauchamp 72400 Vilaine la Gonais","lat":48.130319,"lon":0.607304,"score":0.8758221725731894,"matched":"11 Lieu Dit Le Haras De Beauchamp 72400 Villaines-la-Gonais","type":"housenumber","postcode":"72400","city":"Villaines-la-Gonais","source":"adresses utf.csv","citycode":"72375"},{"id":47,"address":"94 rue Jean Ochin 59152 Chéreng","lat":50.605117,"lon":3.206905,"score":0.9592218181818182,"matched":"94 Rue Jean Ochin 59152 Chéreng","type":"housenumber","postcode":"59152","city":"Chéreng","source":"adresses utf.csv","citycode":"59146"},{"id":48,"address":"120 rue du petit Anhiers 59194 Anhiers","lat":50.399728,"lon":3.164233,"score":0.9513845454545454,"matched":"120 Rue du Petit Anhiers 59194 Anhiers","type":"housenumber","postcode":"59194","city":"Anhiers","source":"adresses utf.csv","citycode":"59007"},{"id":49,"address":"4 Rue de Gouy 62130 Mont en Ternois","lat":50.321056,"lon":2.386546,"score":0.8596233333333333,"matched":"4 Rue de Gouy 62130 Monts-en-Ternois","type":"housenumber","postcode":"62130","city":"Monts-en-Ternois","source":"adresses utf.csv","citycode":"62590"},{"id":50,"address":"2 Impasse du Bois 62130 Brias","lat":50.412912,"lon":2.365881,"score":0.9373090909090908,"matched":"2 Impasse du Bois 62130 Brias","type":"housenumber","postcode":"62130","city":"Brias","source":"adresses utf.csv","citycode":"62180"},{"id":51,"address":"35 Chemin de Perruquet 3179 St Jory","lat":43.742204,"lon":1.344604,"score":0.7828690909090908,"matched":"35 Chemin de Perruquet 31790 Saint-Jory","type":"housenumber","postcode":"31790","city":"Saint-Jory","source":"adresses utf.csv","citycode":"31490"},{"id":52,"address":"1 Rue de la Vengerie 62840 Laventie","lat":50.623732,"lon":2.794345,"score":0.9559927272727272,"matched":"1 Rue de la Vengerie 62840 Laventie","type":"housenumber","postcode":"62840","city":"Laventie","source":"adresses utf.csv","citycode":"62491"},{"id":53,"address":"104 Rue de Neuve Maison 02500 Hirson","lat":49.923504,"lon":4.069992,"score":0.9639681818181818,"matched":"104 Rue de Neuve Maison 02500 Hirson","type":"housenumber","postcode":"02500","city":"Hirson","source":"adresses utf.csv","citycode":"02381"},{"id":54,"address":"5bis Rue des Mines 59580 Emerchicourt","lat":50.308663,"lon":3.241385,"score":0.945420909090909,"matched":"5bis Rue des Mines 59580 Émerchicourt","type":"housenumber","postcode":"59580","city":"Émerchicourt","source":"adresses utf.csv","citycode":"59192"},{"id":55,"address":"1 Grand Rue 59266 Honnecourt sur Escaut","lat":50.03247,"lon":3.226939,"score":0.9468363636363636,"matched":"1 Grand Rue 59266 Honnecourt-sur-Escaut","type":"housenumber","postcode":"59266","city":"Honnecourt-sur-Escaut","source":"adresses utf.csv","citycode":"59312"},{"id":56,"address":"465 Rue de la Biette 62350 Robecq","lat":50.595277,"lon":2.53433,"score":0.9449399999999999,"matched":"465 Rue de la Biette 62350 Robecq","type":"housenumber","postcode":"62350","city":"Robecq","source":"adresses utf.csv","citycode":"62713"},{"id":57,"address":"467 Rue de la Biette 62350 Robecq","lat":50.595452,"lon":2.534285,"score":0.9449399999999999,"matched":"467 Rue de la Biette 62350 Robecq","type":"housenumber","postcode":"62350","city":"Robecq","source":"adresses utf.csv","citycode":"62713"},{"id":58,"address":"169 Chemin du Moulin a Vent 78630 Orgeval","lat":48.925612,"lon":1.962734,"score":0.9518190909090909,"matched":"169 Chemin du Moulin a Vent 78630 Orgeval","type":"housenumber","postcode":"78630","city":"Orgeval","source":"adresses utf.csv","citycode":"78466"},{"id":59,"address":"82 Route d'Hondschoote 59114 Steenvoorde","lat":50.821201,"lon":2.578378,"score":0.9609227272727272,"matched":"82 Route d'Hondschoote 59114 Steenvoorde","type":"housenumber","postcode":"59114","city":"Steenvoorde","source":"adresses utf.csv","citycode":"59580"},{"id":60,"address":"48 Chemin de Launay 50000 St Lo","lat":49.110134,"lon":-1.04174,"score":0.8265974331550802,"matched":"48 Chemin de Launay 50000 Saint-Lô","type":"housenumber","postcode":"50000","city":"Saint-Lô","source":"adresses utf.csv","citycode":"50502"},{"id":61,"address":"41 Rue de Plessier sur Bulles 60510 Essuiles","lat":49.494338,"lon":2.295538,"score":0.9374109090909091,"matched":"41 Rue de Plessier sur Bulles 60510 Essuiles","type":"housenumber","postcode":"60510","city":"Essuiles","source":"adresses utf.csv","citycode":"60222"},{"id":62,"address":"Ferme de stemberg 62500 Clairmarais","lat":50.773731,"lon":2.383149,"score":0.7688304306220094,"matched":"Ferme du Stremberg 62500 Clairmarais","type":"locality","postcode":"62500","city":"Clairmarais","source":"adresses utf.csv","citycode":"62225"},{"id":63,"address":"1 rue des Chênes 62350 Mont Bernanchon","lat":50.586208,"lon":2.62013,"score":0.8957626781326781,"matched":"Rue des Chênes 62350 Mont-Bernanchon","type":"street","postcode":"62350","city":"Mont-Bernanchon","source":"adresses utf.csv","citycode":"62584"},{"id":64,"address":"35 b Rue de Lambersart 59237 Verlinghem","lat":50.67504,"lon":3.000639,"score":0.8378691387559809,"matched":"Rue de Lambersart 59237 Verlinghem","type":"street","postcode":"59237","city":"Verlinghem","source":"adresses utf.csv","citycode":"59611"},{"id":65,"address":"11 Rue du Bois 59980 Troisvilles","lat":50.101411,"lon":3.47044,"score":0.9476654545454545,"matched":"11 Rue du Bois 59980 Troisvilles","type":"housenumber","postcode":"59980","city":"Troisvilles","source":"adresses utf.csv","citycode":"59604"},{"id":66,"address":"3 Rue de la Porte de Fer 59450 Sin le Noble","lat":50.370378,"lon":3.130123,"score":0.9668072727272726,"matched":"3 Rue de la Porte de Fer 59450 Sin-le-Noble","type":"housenumber","postcode":"59450","city":"Sin-le-Noble","source":"adresses utf.csv","citycode":"59569"},{"id":67,"address":"29 Rue de Lubersac 59286 Roost Warendin","lat":50.423714,"lon":3.106305,"score":0.9592181818181817,"matched":"29 Rue de Lubersac 59286 Roost-Warendin","type":"housenumber","postcode":"59286","city":"Roost-Warendin","source":"adresses utf.csv","citycode":"59509"},{"id":68,"address":"16 Rue Verte 60120 Tartigny","lat":49.635198,"lon":2.362846,"score":0.9426327272727272,"matched":"16 Rue Verte 60120 Tartigny","type":"housenumber","postcode":"60120","city":"Tartigny","source":"adresses utf.csv","citycode":"60627"},{"id":69,"address":"16 Rue Verte 60120 Tartigny","lat":49.635198,"lon":2.362846,"score":0.9426327272727272,"matched":"16 Rue Verte 60120 Tartigny","type":"housenumber","postcode":"60120","city":"Tartigny","source":"adresses utf.csv","citycode":"60627"},{"id":70,"address":"Les Quarante Arpents 78860 St Nom la Bretèche","lat":48.867671,"lon":1.99192,"score":0.8512366666666666,"matched":"Les Quarante Arpents 78860 Saint-Nom-la-Bretèche","type":"locality","postcode":"78860","city":"Saint-Nom-la-Bretèche","source":"adresses utf.csv","citycode":"78571"},{"id":71,"address":"8 RUE DE VENINGES 58660 Coulanges Les Nerves","lat":47.015533,"lon":3.169976,"score":0.8737619191919191,"matched":"8 Rue de Veninges 58660 Coulanges-lès-Nevers","type":"housenumber","postcode":"58660","city":"Coulanges-lès-Nevers","source":"adresses.xlsx","citycode":"58088"},{"id":72,"address":"1 bousquets - Chemin de Laurentie 31660 Buzet Sur Tarn","lat":43.76141,"lon":1.618271,"score":0.7273200356506238,"matched":"1 Chemin LAURENTIE 31660 Buzet-sur-Tarn","type":"housenumber","postcode":"31660","city":"Buzet-sur-Tarn","source":"adresses.xlsx","citycode":"31094"},{"id":73,"address":"14 RUE D'AUDRUICQ  62910 Eperlecques","lat":50.817522,"lon":2.146187,"score":0.8130975119617223,"matched":"14 Route d'Audruicq 62910 Éperlecques","type":"housenumber","postcode":"62910","city":"Éperlecques","source":"adresses.xlsx","citycode":"62297"},{"id":74,"address":"Ferme de couvron  2120 Macquigny","lat":49.889369,"lon":3.579234,"score":0.8506190909090908,"matched":"Ferme de Couvron 02120 Macquigny","type":"street","postcode":"02120","city":"Macquigny","source":"adresses.xlsx","citycode":"02450"},{"id":75,"address":"187 route de strasbourg  57245 Peltre","lat":49.079461,"lon":6.238805,"score":0.8374048051948051,"matched":"Route de Strasbourg 57245 Peltre","type":"locality","postcode":"57245","city":"Peltre","source":"adresses.xlsx","citycode":"57534"},{"id":76,"address":"15 av François Mitterrand 62217 Beaurains","lat":50.260344,"lon":2.797664,"score":0.840380606060606,"matched":"15 Avenue Francois Mitterrand 62217 Beaurains","type":"housenumber","postcode":"62217","city":"Beaurains","source":"adresses.xlsx","citycode":"62099"},{"id":77,"address":"1711 CHEMIN DE LA BLANCHE BANNIERE  59560 Comines","lat":50.752629,"lon":3.034529,"score":0.9596636363636364,"matched":"1711 Chemin de la Blanche Bannière 59560 Comines","type":"housenumber","postcode":"59560","city":"Comines","source":"adresses.xlsx","citycode":"59152"},{"id":78,"address":"1 RUE DU MOULIN  59195 Herin","lat":50.362747,"lon":3.443774,"score":0.9532836363636363,"matched":"1 Rue du Moulin 59195 Hérin","type":"housenumber","postcode":"59195","city":"Hérin","source":"adresses.xlsx","citycode":"59302"},{"id":79,"address":"1 D114 - les Mullotes  78980 Breval","lat":48.951777,"lon":1.556006,"score":0.6864527272727272,"matched":"Les Mulottes 78980 Bréval","type":"locality","postcode":"78980","city":"Bréval","source":"adresses.xlsx","citycode":"78107"},{"id":80,"address":"62 rue de perenchies  59237 Verlinghem","lat":50.676305,"lon":2.989309,"score":0.9606372727272725,"matched":"62 Rue de Pérenchies 59237 Verlinghem","type":"housenumber","postcode":"59237","city":"Verlinghem","source":"adresses.xlsx","citycode":"59611"},{"id":81,"address":"1835 rue de quesnes  59310 Landas","lat":50.483556,"lon":3.2732,"score":0.8218762258953168,"matched":"1835 Rue du Quesne 59310 Landas","type":"housenumber","postcode":"59310","city":"Landas","source":"adresses.xlsx","citycode":"59330"},{"id":82,"address":"32 RUE AUGUSTE BLANQUI 59135 Wallers","lat":50.387979,"lon":3.398772,"score":0.7529668831168831,"matched":"32 Rue Blanqui 59135 Wallers","type":"housenumber","postcode":"59135","city":"Wallers","source":"adresses.xlsx","citycode":"59632"},{"id":83,"address":"RUE DE L'ELECTROLYSE -  62410 Wingles","lat":50.491746,"lon":2.860228,"score":0.9573372727272728,"matched":"Rue de l’Electrolyse 62410 Wingles","type":"street","postcode":"62410","city":"Wingles","source":"adresses.xlsx","citycode":"62895"},{"id":84,"address":"48 Chemin de Launey - La chevalerie  50000 Saint Lo","lat":49.095792,"lon":-1.102117,"score":0.5016419008264462,"matched":"Chemin de Lignerolles 50000 Saint-Lô","type":"street","postcode":"50000","city":"Saint-Lô","source":"adresses.xlsx","citycode":"50502"},{"id":85,"address":"60 rue de la liberté 59447 Onnaing","lat":50.388197,"lon":3.591739,"score":0.7986107438016529,"matched":"60 Rue de la Liberté 59264 Onnaing","type":"housenumber","postcode":"59264","city":"Onnaing","source":"adresses.xlsx","citycode":"59447"},{"id":86,"address":"1 RUE DE LA MOTTE  21130 Les Maillys","lat":47.126521,"lon":5.32986,"score":0.9395090909090908,"matched":"1 Rue de la Motte 21130 Les Maillys","type":"housenumber","postcode":"21130","city":"Les Maillys","source":"adresses.xlsx","citycode":"21371"},{"id":87,"address":"rue Marquette - LES BRAIES  59554 Tilloy lez Cambrai","lat":50.196324,"lon":3.222886,"score":0.7010747237076648,"matched":"Rue de Marquette 59554 Tilloy-lez-Cambrai","type":"street","postcode":"59554","city":"Tilloy-lez-Cambrai","source":"adresses.xlsx","citycode":"59597"},{"id":88,"address":"786 Av Georges Washington 62400 Bethune","lat":50.537929,"lon":2.660157,"score":0.7784704958677685,"matched":"786 Avenue George Washington 62400 Béthune","type":"housenumber","postcode":"62400","city":"Béthune","source":"adresses.xlsx","citycode":"62119"},{"id":89,"address":"Rocade Nord - Le Thumelart  59230 Saint Amand les Eaux","lat":50.437217,"lon":3.440388,"score":0.71803,"matched":"Rocade Nord 59230 Saint-Amand-les-Eaux","type":"street","postcode":"59230","city":"Saint-Amand-les-Eaux","source":"adresses.xlsx","citycode":"59526"},{"id":90,"address":"225 chemin des champs Thibault, 80260 Villers-Bocage","site":"CFD - CIS Villers Bocage","lat":50.004736,"lon":2.307458,"score":0.9437836363636363,"matched":"225 Chemin des Champs Thibault 80260 Villers-Bocage","type":"housenumber","postcode":"80260","city":"Villers-Bocage","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80798"},{"id":91,"address":"120 Av. Roger Dumoulin, 80080 Amiens","site":"AMIENS - POULAINVILLE","lat":49.933638,"lon":2.284676,"score":0.7347673684210525,"matched":"Avenue Roger Dumoulin 80080 Amiens","type":"street","postcode":"80080","city":"Amiens","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80021"},{"id":92,"address":"7 All. du Bicètre, 80000 Amiens","site":"AMIENS - DDSIS","lat":49.8973,"lon":2.285506,"score":0.8455334017595307,"matched":"7 Allée du Bicêtre 80000 Amiens","type":"housenumber","postcode":"80000","city":"Amiens","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80021"},{"id":93,"address":"2 Blv de l’Avenir, 80585 Nesle","site":"NESLE","lat":49.7598,"lon":2.921379,"score":0.5051404668304668,"matched":"2 Boulevard de l'Avenir 80190 Nesle","type":"housenumber","postcode":"80190","city":"Nesle","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80585"},{"id":94,"address":"4 Av. Du Great Eastern, 80330 Longueau","site":"GARAGE GLISY - CDER","lat":49.869065,"lon":2.376192,"score":0.8170172727272726,"matched":"4 Avenue du Great Eastern 80330 Longueau","type":"housenumber","postcode":"80330","city":"Longueau","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80489"},{"id":95,"address":"65 rue du 11 novembre 1918, 80220 Gamaches","site":"GAMACHES","lat":49.991008,"lon":1.569488,"score":0.8445990909090908,"matched":"65 Rue du 11 Novembre 80220 Gamaches","type":"housenumber","postcode":"80220","city":"Gamaches","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80373"},{"id":96,"address":"24 Rue de Nesle, 80700 Roye","site":"ROYE","lat":49.699741,"lon":2.796896,"score":0.8507127272727272,"matched":"Rue de Nesle 80700 Roye","type":"street","postcode":"80700","city":"Roye","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80685"},{"id":97,"address":"LA GLORIETTE Rue Jean Jaurès, 80140 Oisemont","site":"FORCEVILLE","lat":49.957003,"lon":1.772446,"score":0.6704192640692641,"matched":"Rue Jean Jaurès 80140 Oisemont","type":"street","postcode":"80140","city":"Oisemont","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80606"},{"id":98,"address":"LA POINTE DES CHEMINS, 5156 Rte de Villers Bretonneux, 80800 Fouilloy","site":"VAL DE SOMME","lat":49.893439,"lon":2.507443,"score":0.598571277997365,"matched":"5156 Route de Villers-Bretonneux 80800 Fouilloy","type":"housenumber","postcode":"80800","city":"Fouilloy","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80338"},{"id":99,"address":"11 Rue de Millencourt, 80300 Albert","site":"ALBERT","lat":50.003362,"lon":2.639528,"score":0.960371818181818,"matched":"11 Rue de Millencourt 80300 Albert","type":"housenumber","postcode":"80300","city":"Albert","source":"SDIS80","color":"#2563EB","hasCircle":false,"citycode":"80016"},{"address":"La Hayette - Le Paty de Ruffigny, 80460 Ault","site":"AULT","lat":50.08800022857143,"lon":1.4491767,"score":1,"matched":"Centroïde cadastral parcelle Ault ZH 81","type":"cadastre","postcode":"80460","city":"Ault","source":"SDIS80 cadastre","color":"#2563EB","hasCircle":false,"id":100,"citycode":"80039"},{"address":"Parcelles XI 132-133-134-135-136-137-138-158, Abbeville","site":"ABBEVILLE","lat":50.103808998950896,"lon":1.833098469575893,"score":1,"matched":"Centroïde moyen des parcelles cadastrales Abbeville XI 132 à 138 et 158","type":"cadastre","postcode":"","city":"Abbeville","source":"SDIS80 cadastre","color":"#2563EB","hasCircle":false,"id":101,"citycode":"80001"}];
 const projectInfoById = {"6":{"project":"Dechy","spv":"Equisolar 1","kwc":497.95,"tariff":12.09},"5":{"project":"Verstraeten","spv":"Equisolar 1","kwc":306.24,"tariff":12.09},"2":{"project":"Cheenne","spv":"Equisolar 1","kwc":299.64,"tariff":12.09},"1":{"project":"Bouchery","spv":"Equisolar 1","kwc":499.73,"tariff":11.51},"4":{"project":"Rouzé","spv":"Equisolar 1","kwc":327.97,"tariff":11.51},"3":{"project":"Christen","spv":"Equisolar 1","kwc":347.6,"tariff":11.12},"37":{"project":"SCI Calmette","spv":"Equisolar 2","kwc":313.72,"tariff":11.51},"8":{"project":"Bellement","spv":"Equisolar 2","kwc":327.6,"tariff":11.12},"36":{"project":"Schnoebelen","spv":"Equisolar 2","kwc":355.24,"tariff":11.12},"12":{"project":"Dangelser","spv":"Equisolar 2","kwc":310.905,"tariff":11.12},"10":{"project":"Callens","spv":"Equisolar 2","kwc":499.95,"tariff":11.12},"32":{"project":"Moreau","spv":"Equisolar 2","kwc":499.95,"tariff":10.82},"28":{"project":"Mathieu","spv":"Equisolar 2","kwc":225.17,"tariff":10.82},"20":{"project":"Gras","spv":"Equisolar 2","kwc":396,"tariff":10.52},"18":{"project":"Denecker","spv":"Equisolar 2","kwc":421.2,"tariff":10.52},"33":{"project":"Nollet","spv":"Equisolar 2","kwc":340.2,"tariff":10.52},"13":{"project":"DeChambord","spv":"Equisolar 2","kwc":363.09,"tariff":10.82},"11":{"project":"Carré","spv":"Equisolar 2","kwc":493.95,"tariff":11.12},"21":{"project":"Hassen","spv":"Equisolar 2","kwc":427.05,"tariff":10.52},"23":{"project":"Lebegue","spv":"Equisolar 2","kwc":321.3,"tariff":10.82},"19":{"project":"Descamps","spv":"Equisolar 2","kwc":421.2,"tariff":10.39},"25":{"project":"Lefevre Fretin","spv":"Equisolar 2","kwc":299.7,"tariff":10.82},"31":{"project":"Milon","spv":"Equisolar 2","kwc":459.9,"tariff":11.12},"29":{"project":"Mauge","spv":"Equisolar 2","kwc":358.65,"tariff":10.82},"27":{"project":"Lemay","spv":"Equisolar 2","kwc":429.2,"tariff":11.12},"22":{"project":"Lambert Thierry","spv":"Equisolar 2","kwc":499.95,"tariff":11.12},"7":{"project":"Aiglon","spv":"Equisolar 2","kwc":499.95,"tariff":10.82},"14":{"project":"Decossin","spv":"Equisolar 2","kwc":495,"tariff":10.52},"24":{"project":"Leducq 1","spv":"Equisolar 2","kwc":311.22,"tariff":10.82},"78":{"project":"Perlot","spv":"Equisolar 2","kwc":499.59,"tariff":10.39},"15":{"project":"Defives","spv":"Equisolar 2","kwc":499.5,"tariff":10.52},"16":{"project":"Demoulin Mont 2","spv":"Equisolar 2","kwc":402.22,"tariff":10.52},"17":{"project":"Demoulin Mont 1","spv":"Equisolar 2","kwc":499.59,"tariff":10.52},"30":{"project":"Meslif 1","spv":"Equisolar 2","kwc":340.34,"tariff":9.65},"26":{"project":"Leleux","spv":"Equisolar 2","kwc":382.2,"tariff":10.52},"9":{"project":"Blondeau","spv":"Equisolar 2","kwc":423.15,"tariff":10.39},"35":{"project":"Pertusa","spv":"Equisolar 2","kwc":480.48,"tariff":10.52},"59":{"project":"Hosdez","spv":"Equisolar 3","kwc":499.95,"tariff":10.39},"39":{"project":"Arbon","spv":"Equisolar 3","kwc":499.95,"tariff":9.65},"42":{"project":"Billot","spv":"Equisolar 3","kwc":499.59,"tariff":9.65},"67":{"project":"Paillousse","spv":"Equisolar 3","kwc":423.15,"tariff":10.39},"52":{"project":"Desmarez","spv":"Equisolar 3","kwc":482.4,"tariff":10.39},"53":{"project":"Desse","spv":"Equisolar 3","kwc":474.3,"tariff":10.39},"48":{"project":"Delporte","spv":"Equisolar 3","kwc":424.06,"tariff":9.65},"66":{"project":"Maes","spv":"Equisolar 3","kwc":425.88,"tariff":9.65},"58":{"project":"Grandpierre","spv":"Equisolar 3","kwc":398.58,"tariff":8.81},"56":{"project":"Gesquières 1","spv":"Equisolar 3","kwc":449.5,"tariff":9.65},"57":{"project":"Gesquières 2","spv":"Equisolar 3","kwc":354.9,"tariff":8.81},"65":{"project":"Lesage","spv":"Equisolar 3","kwc":424.52,"tariff":9.65},"64":{"project":"Lemaire","spv":"Equisolar 3","kwc":425.88,"tariff":8.81},"38":{"project":"Angot","spv":"Equisolar 3","kwc":499.59,"tariff":8.81},"45":{"project":"Bouchery 2","spv":"Equisolar 3","kwc":499.87,"tariff":9.65},"60":{"project":"Hubert 1","spv":"Equisolar 3","kwc":410.85,"tariff":8.81},"54":{"project":"Deusy","spv":"Equisolar 3","kwc":499.96,"tariff":10.39},"41":{"project":"Azzolino","spv":"Equisolar 3","kwc":486.85,"tariff":9.65},"51":{"project":"D'erceville","spv":"Equisolar 3","kwc":499.88,"tariff":9.65},"68":{"project":"Pietrancosta 1","spv":"Equisolar 3","kwc":303.94,"tariff":9.65},"43":{"project":"Boblet","spv":"Equisolar 3","kwc":382.2,"tariff":9.65},"44":{"project":"Boucault","spv":"Equisolar 3","kwc":283.92,"tariff":10.39},"46":{"project":"Catoire 2","spv":"Equisolar 3","kwc":499.59,"tariff":9.65},"40":{"project":"ATF","spv":"Equisolar 3","kwc":470.47,"tariff":8.81},"50":{"project":"Demoulin 5","spv":"Equisolar 3","kwc":499.59,"tariff":9.65},"61":{"project":"Josselin","spv":"Equisolar 3","kwc":488.215,"tariff":9.65},"62":{"project":"Lambert 2","spv":"Sunphy","kwc":487.275,"tariff":9.65},"63":{"project":"Leducq 2","spv":"Sunphy","kwc":498.225,"tariff":9.65},"49":{"project":"Demoulin 3","spv":"Sunphy","kwc":389.02,"tariff":8.81},"69":{"project":"Pietrancosta 2","spv":"Sunphy","kwc":498.225,"tariff":9.65}};
@@ -169,8 +295,18 @@ function regLabelForCitycode(citycode) {
   const label = DENS7_LABEL[dens7] || 'catégorie Insee inconnue';
   return km + ' km · ' + label;
 }
-let visiblePoints = points.filter(point => projectInfoById[point.id]).map(point => ({...point, ...projectInfoById[point.id]}));
+let visiblePoints = points.filter(point => projectInfoById[point.id]).map(point => ({
+  ...point, ...projectInfoById[point.id], annualKwh: window.pipelineAnnualKwhById?.[point.id] ?? null
+}));
 const list = document.getElementById('list');
+const centralListToggle = document.getElementById('centralListToggle');
+const managementPanel = document.getElementById('managementPanel');
+const managementClose = document.getElementById('managementClose');
+const producerTab = document.getElementById('producerTab');
+const consumerTab = document.getElementById('consumerTab');
+const producerActions = document.getElementById('producerActions');
+const consumerActions = document.getElementById('consumerActions');
+const managementList = document.getElementById('managementList');
 document.getElementById('addressCount').textContent = visiblePoints.length;
 const search = document.getElementById('search');
 const externalSearchButton = document.getElementById('externalSearch');
@@ -183,6 +319,28 @@ const importCsvButton = document.getElementById('importCsvBtn');
 const clearImportButton = document.getElementById('clearImportBtn');
 const csvFileInput = document.getElementById('csvFile');
 const importStatusEl = document.getElementById('importStatus');
+const addAddressButton = document.getElementById('addAddressBtn');
+const addressStatusEl = document.getElementById('addressStatus');
+const addressDialog = document.getElementById('addressDialog');
+const addressForm = document.getElementById('addressForm');
+const addressFormError = document.getElementById('addressFormError');
+const addressCancelButton = document.getElementById('addressCancel');
+const addressSaveButton = document.getElementById('addressSave');
+const editCentralDialog = document.getElementById('editCentralDialog');
+const editCentralForm = document.getElementById('editCentralForm');
+const editCentralError = document.getElementById('editCentralError');
+const editCentralCancel = document.getElementById('editCentralCancel');
+const editCentralSave = document.getElementById('editCentralSave');
+const accAllocationField = document.getElementById('accAllocationField');
+const consumerDialog = document.getElementById('consumerDialog');
+const consumerForm = document.getElementById('consumerForm');
+const consumerFormError = document.getElementById('consumerFormError');
+const consumerCancel = document.getElementById('consumerCancel');
+const consumerSave = document.getElementById('consumerSave');
+const addConsumerBtn = document.getElementById('addConsumerBtn');
+const deleteSelectedConsumers = document.getElementById('deleteSelectedConsumers');
+const toggleCisButton = document.getElementById('toggleCisBtn');
+const cisStatusEl = document.getElementById('cisStatus');
 const csvMappingDialog = document.getElementById('csvMappingDialog');
 const csvMappingSummary = document.getElementById('csvMappingSummary');
 const csvMappingGrid = document.getElementById('csvMappingGrid');
@@ -191,17 +349,29 @@ const csvMappingError = document.getElementById('csvMappingError');
 const csvMappingCancel = document.getElementById('csvMappingCancel');
 const csvMappingConfirm = document.getElementById('csvMappingConfirm');
 const IMPORT_STORAGE_KEY = 'carte-adresses-import-csv-v1';
-let map, zoneLayer, circleGroup, markerGroup;
+const SAVED_ADDRESS_STORAGE_KEY = 'carte-adresses-manual-v1';
+const hiddenAddressIds = new Set();
+const editedCentralIds = new Set();
+let map, zoneLayer, circleGroup, markerGroup, cisLayer;
+let cisSites = [];
+let cisVisible = true;
 let activeId = null;
+let managementTab = 'producers';
+let editingCentralId = null;
+let editingConsumerId = null;
+const selectedConsumerIds = new Set();
 let externalSearchController = null;
 let searchPins = [];
 let pinIdCounter = 0;
 let activeCircle = null;
 let resizeHandle = null;
 let circleContext = null;
+let circleDragElement = null;
 let nextImportId = Math.max(0, ...points.map(p => p.id)) + 1;
+let nextSavedId = -1;
 let pendingCsvImport = null;
 const markers = new Map();
+const circleExcludedSiteIds = new Set();
 function groupPoints(pointList) {
   return Array.from(pointList.reduce((groups, point) => {
     const key = point.lat.toFixed(6) + ',' + point.lon.toFixed(6);
@@ -213,10 +383,26 @@ function groupPoints(pointList) {
 let groupedPoints = groupPoints(visiblePoints);
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function formatNumber(value) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 }).format(value); }
+function formatWholeKwh(value) { return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function formatEuro(value) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); }
+function tariffMwhFromInternal(value) { return Math.round(value * 10000) / 1000; }
+function tariffInternalFromMwh(value) { return value / 10; }
+function formatTariffMwh(value) { return formatNumber(tariffMwhFromInternal(value)) + ' €/MWh'; }
 function powerTariffLine(point) {
   const parts = [];
-  if (point.kwc !== null && point.kwc !== undefined) parts.push('Puissance : ' + formatNumber(point.kwc) + ' kWc');
-  if (point.tariff !== null && point.tariff !== undefined) parts.push('Tarif : ' + formatNumber(point.tariff) + ' c\u20ac/kWh');
+  if (Number.isFinite(point.annualKwh)) parts.push('Production annuelle : ' + formatWholeKwh(point.annualKwh) + ' kWh');
+  else if (point.imported || point.manual) {
+    if (point.kwc !== null && point.kwc !== undefined) parts.push('Puissance : ' + formatNumber(point.kwc) + ' kWc');
+  } else parts.push('Production annuelle : indisponible');
+  if (point.imported && Number.isFinite(point.consumptionProductionHoursKwh)) parts.push('Consommation pendant les heures de production : ' + formatWholeKwh(point.consumptionProductionHoursKwh) + ' kWh');
+  if (point.imported && Number.isFinite(point.tariffProductionHours)) parts.push('Tarif moyen pendant les heures de production : ' + formatTariffMwh(point.tariffProductionHours));
+  if (point.imported && Number.isFinite(point.consumptionOffHoursKwh)) parts.push('Consommation hors heures de production : ' + formatWholeKwh(point.consumptionOffHoursKwh) + ' kWh');
+  if (point.imported && Number.isFinite(point.tariffOffHours)) parts.push('Tarif moyen hors heures de production : ' + formatTariffMwh(point.tariffOffHours));
+  if (!point.imported && point.accStatus) {
+    parts.push('Boucle ACC : ' + (point.accStatus === 'yes' ? 'Oui' : 'Non'));
+    if (point.accStatus === 'yes' && Number.isFinite(point.accAllocatedKwh)) parts.push('Production affectée à l\u2019ACC : ' + formatWholeKwh(point.accAllocatedKwh) + ' kWh');
+  }
+  if (!point.imported && point.tariff !== null && point.tariff !== undefined) parts.push('Tarif : ' + formatTariffMwh(point.tariff));
   return parts.join('<br>');
 }
 function projectDetails(point) {
@@ -226,9 +412,20 @@ function projectDetails(point) {
   lines.push('Zone r\u00e9glementaire : ' + regLabelForCitycode(point.citycode));
   return lines.join('<br>');
 }
+function circleIsVisible() {
+  return Boolean(map && activeCircle && circleGroup?.hasLayer(activeCircle));
+}
+function pointIsInsideCircle(point) {
+  if (!circleIsVisible()) return false;
+  const center = activeCircle.getLatLng();
+  return map.distance([center.lat, center.lng], [point.lat, point.lon]) <= activeCircle.getRadius();
+}
 function iconFor(point) {
-  const isActive = point.ids.includes(activeId);
-  return L.divIcon({ className: '', html: '<div class="point-icon' + (isActive ? ' active' : '') + '" style="--point-color:' + (point.color || '#d83b35') + '"></div>', iconSize: [14, 14], iconAnchor: [7, 7], popupAnchor: [0, -7] });
+  const isIncludedInCircle = pointIsInsideCircle(point) && point.addresses.some(address => !circleExcludedSiteIds.has(address.id));
+  const isConsumer = point.addresses.every(address => address.imported);
+  const isActive = !circleIsVisible() && point.ids.includes(activeId);
+  const isAcc = point.addresses.some(address => !address.imported && address.accStatus === 'yes');
+  return L.divIcon({ className: '', html: '<div class="point-icon' + (isActive ? ' active' : '') + (isAcc ? ' acc' : '') + (isConsumer ? ' consumer' : '') + (isIncludedInCircle ? ' in-circle' : '') + '" style="--point-color:' + (point.color || '#d83b35') + '"></div>', iconSize: [14, 14], iconAnchor: [7, 7], popupAnchor: [0, -7] });
 }
 function popupFor(point) {
   if (point.addresses.length > 1) {
@@ -267,16 +464,91 @@ async function loadZoneLayer() {
     status.textContent = 'Zones indisponibles.';
   }
 }
-function buildLayers() {
+function cisPopup(site) {
+  const title = site.name || site.type;
+  const lines = [escapeHtml(site.type)];
+  const location = [site.address, site.city].filter(Boolean).join(' · ');
+  if (location) lines.push(escapeHtml(location));
+  if (site.status && site.status !== 'En service') lines.push('Statut IGN : ' + escapeHtml(site.status));
+  lines.push('Coordonnées : ' + site.lat.toFixed(6) + ', ' + site.lon.toFixed(6));
+  return '<strong class="popup-title">' + escapeHtml(title) + '</strong>' + lines.join('<br>');
+}
+let cisSiteIcon = null;
+function addCisSiteMarker(site) {
+  if (!cisSiteIcon) cisSiteIcon = L.divIcon({ className: '', html: '<span class="cis-triangle"></span>', iconSize: [18, 18], iconAnchor: [9, 9], popupAnchor: [0, -9] });
+  L.marker([site.lat, site.lon], { pane: 'cisPane', icon: cisSiteIcon, title: site.name || site.type })
+    .bindPopup(cisPopup(site)).addTo(cisLayer);
+}
+function renderCisSites() {
+  if (!map || !cisLayer || !cisVisible || !cisSites.length) return;
+  cisLayer.clearLayers();
+  const bounds = map.getBounds().pad(0.12);
+  const zoom = map.getZoom();
+  const clusters = new Map();
+  for (const site of cisSites) {
+    if (!bounds.contains([site.lat, site.lon])) continue;
+    if (zoom >= 11) {
+      addCisSiteMarker(site);
+      continue;
+    }
+    const pixel = map.project([site.lat, site.lon], zoom);
+    const key = Math.floor(pixel.x / 52) + ':' + Math.floor(pixel.y / 52);
+    if (!clusters.has(key)) clusters.set(key, { count: 0, lat: 0, lon: 0, first: site });
+    const cluster = clusters.get(key);
+    cluster.count++;
+    cluster.lat += site.lat;
+    cluster.lon += site.lon;
+  }
+  if (zoom >= 11) return;
+  clusters.forEach(cluster => {
+    if (cluster.count === 1) {
+      addCisSiteMarker(cluster.first);
+      return;
+    }
+    const lat = cluster.lat / cluster.count, lon = cluster.lon / cluster.count;
+    const diameter = Math.min(42, 26 + Math.log10(cluster.count) * 8);
+    const icon = L.divIcon({
+      className: '',
+      html: '<span class="cis-cluster"><span class="cis-cluster-count">' + cluster.count + '</span></span>',
+      iconSize: [diameter, diameter], iconAnchor: [diameter / 2, diameter / 2]
+    });
+    L.marker([lat, lon], { pane: 'cisPane', icon, title: cluster.count + ' centres de secours' })
+      .on('click', () => map.setView([lat, lon], Math.min(zoom + 3, 11), { animate: true }))
+      .addTo(cisLayer);
+  });
+}
+async function loadCisSites() {
+  try {
+    const response = await fetch('centres-secours-ign.json');
+    if (!response.ok) throw new Error('Réponse ' + response.status);
+    const data = await response.json();
+    if (!data || !Array.isArray(data.sites)) throw new Error('Données de centres invalides');
+    cisSites = data.sites.filter(site => Number.isFinite(site.lat) && Number.isFinite(site.lon));
+    cisStatusEl.textContent = cisSites.length.toLocaleString('fr-FR') + ' centres d’incendie et de secours affichés.';
+    toggleCisButton.disabled = false;
+    map.attributionControl.addAttribution('<a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener noreferrer">IGN BD TOPO</a>');
+    renderCisSites();
+  } catch (error) {
+    cisStatusEl.textContent = 'Centres de secours indisponibles.';
+  }
+}
+function rebuildAddressMarkers() {
+  groupedPoints = groupPoints(visiblePoints);
+  if (!map || !markerGroup) return;
+  markerGroup.clearLayers();
+  markers.clear();
   groupedPoints.forEach(point => {
     const latLng = [point.lat, point.lon];
-    const marker = L.marker(latLng, { icon: iconFor(point), title: point.site ? point.site + ' - ' + point.address : point.address }).bindPopup(popupFor(point));
+    const marker = L.marker(latLng, { icon: iconFor(point) }).bindTooltip(popupFor(point), { direction: 'top', offset: [0, -8], opacity: 1, sticky: true });
     marker.addTo(markerGroup);
-    marker.on('click', () => activate(point.ids[0], false));
+    marker.on('click', () => handleProjectMarkerClick(point));
     point.ids.forEach(id => markers.set(id, marker));
   });
+}
+function buildLayers() {
+  rebuildAddressMarkers();
   map.invalidateSize();
-  map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
+  if (visiblePoints.length) map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
 }
 function destinationPoint(latlng, bearingDeg, distanceMeters) {
   const R = 6378137;
@@ -288,11 +560,17 @@ function destinationPoint(latlng, bearingDeg, distanceMeters) {
 }
 function ensureCircle() {
   if (activeCircle) return activeCircle;
-  activeCircle = L.circle([0, 0], { radius: 1000, color: 'rgba(216,59,53,.62)', weight: 1.5, fillColor: 'rgba(216,59,53,.14)', fillOpacity: 1, className: 'active-circle' });
-  activeCircle.on('mousedown', onCircleMouseDown);
+  activeCircle = L.circle([0, 0], { radius: 1000, renderer: L.svg(), color: 'rgba(216,59,53,.62)', weight: 1.5, fillColor: 'rgba(216,59,53,.14)', fillOpacity: 1, className: 'active-circle' });
   resizeHandle = L.marker([0, 0], { icon: L.divIcon({ className: '', html: '<div class="resize-handle"></div>', iconSize: [14, 14], iconAnchor: [7, 7] }), draggable: true, zIndexOffset: 2000 });
   resizeHandle.on('drag', onHandleDrag);
   return activeCircle;
+}
+function bindCircleDragging() {
+  const element = activeCircle.getElement();
+  if (!element || element === circleDragElement) return;
+  if (circleDragElement) L.DomEvent.off(circleDragElement, 'mousedown', onCircleMouseDown);
+  L.DomEvent.on(element, 'mousedown', onCircleMouseDown);
+  circleDragElement = element;
 }
 function updateHandlePosition() {
   if (!activeCircle || !resizeHandle) return;
@@ -300,26 +578,77 @@ function updateHandlePosition() {
   resizeHandle.setLatLng(destinationPoint(center, 90, activeCircle.getRadius()));
 }
 function placeCircle(lat, lon, radiusMeters, label) {
+  circleExcludedSiteIds.clear();
   ensureCircle();
   activeCircle.setLatLng([lat, lon]);
   activeCircle.setRadius(radiusMeters);
   if (!circleGroup.hasLayer(activeCircle)) activeCircle.addTo(circleGroup);
+  bindCircleDragging();
   if (!circleGroup.hasLayer(resizeHandle)) resizeHandle.addTo(circleGroup);
   updateHandlePosition();
   circleContext = { lat, lon, radiusMeters, label };
   updateCircleStatus();
+  refreshMarkerIcons();
   renderList();
 }
 function hideCircle() {
   if (activeCircle && circleGroup.hasLayer(activeCircle)) circleGroup.removeLayer(activeCircle);
   if (resizeHandle && circleGroup.hasLayer(resizeHandle)) circleGroup.removeLayer(resizeHandle);
   circleContext = null;
+  circleExcludedSiteIds.clear();
   updateCircleStatus();
+  refreshMarkerIcons();
   renderList();
 }
 function resetCircle() {
   if (!circleContext) return;
   placeCircle(circleContext.lat, circleContext.lon, circleContext.radiusMeters, circleContext.label);
+}
+function circleEnergyTotals() {
+  const totals = { productionKwh: 0, productionCount: 0, accAllocatedKwh: 0, accAdjustedCount: 0,
+    consumptionProductionHoursKwh: 0, consumptionProductionHoursCount: 0,
+    consumptionOffHoursKwh: 0, consumptionOffHoursCount: 0,
+    purchaseTariffWeightedSum: 0, purchaseTariffWeightKwh: 0,
+    saleTariffWeightedSum: 0, saleTariffWeightKwh: 0,
+    averagePurchaseTariffMwh: null, averageSaleTariffMwh: null,
+    matchedEnergyKwh: 0, potentialGainsEuro: null };
+  if (!map || !activeCircle || !circleGroup?.hasLayer(activeCircle)) return totals;
+  const center = activeCircle.getLatLng(), radius = activeCircle.getRadius();
+  visiblePoints.forEach(point => {
+    if (map.distance([center.lat, center.lng], [point.lat, point.lon]) > radius) return;
+    if (circleExcludedSiteIds.has(point.id)) return;
+    if (point.imported) {
+      if (Number.isFinite(point.consumptionProductionHoursKwh)) {
+        totals.consumptionProductionHoursKwh += point.consumptionProductionHoursKwh;
+        totals.consumptionProductionHoursCount++;
+        if (Number.isFinite(point.tariffProductionHours) && point.consumptionProductionHoursKwh > 0) {
+          totals.purchaseTariffWeightedSum += point.consumptionProductionHoursKwh * tariffMwhFromInternal(point.tariffProductionHours);
+          totals.purchaseTariffWeightKwh += point.consumptionProductionHoursKwh;
+        }
+      }
+      if (Number.isFinite(point.consumptionOffHoursKwh)) {
+        totals.consumptionOffHoursKwh += point.consumptionOffHoursKwh;
+        totals.consumptionOffHoursCount++;
+      }
+    } else if (Number.isFinite(point.annualKwh)) {
+      const allocated = point.accStatus === 'yes' && Number.isFinite(point.accAllocatedKwh) ? Math.min(point.annualKwh, Math.max(0, point.accAllocatedKwh)) : 0;
+      totals.productionKwh += point.annualKwh - allocated;
+      totals.productionCount++;
+      const availableProductionKwh = point.annualKwh - allocated;
+      if (Number.isFinite(point.tariff) && availableProductionKwh > 0) {
+        totals.saleTariffWeightedSum += availableProductionKwh * tariffMwhFromInternal(point.tariff);
+        totals.saleTariffWeightKwh += availableProductionKwh;
+      }
+      if (allocated > 0) { totals.accAllocatedKwh += allocated; totals.accAdjustedCount++; }
+    }
+  });
+  if (totals.purchaseTariffWeightKwh > 0) totals.averagePurchaseTariffMwh = totals.purchaseTariffWeightedSum / totals.purchaseTariffWeightKwh;
+  if (totals.saleTariffWeightKwh > 0) totals.averageSaleTariffMwh = totals.saleTariffWeightedSum / totals.saleTariffWeightKwh;
+  totals.matchedEnergyKwh = Math.min(totals.productionKwh, totals.consumptionProductionHoursKwh);
+  if (Number.isFinite(totals.averagePurchaseTariffMwh) && Number.isFinite(totals.averageSaleTariffMwh)) {
+    totals.potentialGainsEuro = totals.matchedEnergyKwh / 1000 * (totals.averagePurchaseTariffMwh - totals.averageSaleTariffMwh);
+  }
+  return totals;
 }
 function updateCircleStatus() {
   const isActive = activeCircle && circleGroup.hasLayer(activeCircle);
@@ -332,7 +661,15 @@ function updateCircleStatus() {
   const radiusKm = activeCircle.getRadius() / 1000;
   const km = Math.round(radiusKm * 10) / 10;
   const distanceKm = Math.round(radiusKm * 2 * 10) / 10;
-  circleStatusEl.innerHTML = 'Cercle : ' + formatNumber(distanceKm) + ' km (rayon ' + formatNumber(km) + ' km)' + (circleContext && circleContext.label ? ' \u2014 ' + escapeHtml(circleContext.label) : '') + ' \u00b7 <button type="button" id="resetCircleBtn">R\u00e9initialiser</button> \u00b7 <button type="button" id="hideCircleBtn">Masquer</button>';
+  const totals = circleEnergyTotals();
+  const gainsHtml = Number.isFinite(totals.potentialGainsEuro)
+    ? '<div>Gains potentiels annuels : <strong>' + formatEuro(totals.potentialGainsEuro) + '</strong> <span class="legend-note">' + formatWholeKwh(totals.matchedEnergyKwh) + ' kWh retenus (minimum entre production disponible et consommation en heures de production) × (' + formatNumber(totals.averagePurchaseTariffMwh) + ' − ' + formatNumber(totals.averageSaleTariffMwh) + ') €/MWh ÷ 1 000</span></div>'
+    : '<div>Gains potentiels annuels : <strong>calcul impossible</strong> <span class="legend-note">Renseignez les tarifs pendant les heures de production des consommateurs et les tarifs de vente des centrales.</span></div>';
+  circleStatusEl.innerHTML = 'Cercle : ' + formatNumber(distanceKm) + ' km (rayon ' + formatNumber(km) + ' km)' + (circleContext && circleContext.label ? ' \u2014 ' + escapeHtml(circleContext.label) : '') + ' \u00b7 <button type="button" id="resetCircleBtn">R\u00e9initialiser</button> \u00b7 <button type="button" id="hideCircleBtn">Masquer</button>' +
+    '<div class="circle-totals"><div>Production annuelle disponible : <strong>' + formatWholeKwh(totals.productionKwh) + ' kWh</strong> (' + totals.productionCount + ' site(s))</div>' +
+    (totals.accAdjustedCount ? '<div>Production déjà affectée à l\u2019ACC : ' + formatWholeKwh(totals.accAllocatedKwh) + ' kWh (' + totals.accAdjustedCount + ' site(s))</div>' : '') +
+    '<div>Consommation pendant les heures de production : <strong>' + (totals.consumptionProductionHoursCount ? formatWholeKwh(totals.consumptionProductionHoursKwh) + ' kWh' : 'aucune valeur') + '</strong> (' + totals.consumptionProductionHoursCount + ' site(s) renseigné(s))</div>' +
+    '<div>Consommation hors heures de production : <strong>' + (totals.consumptionOffHoursCount ? formatWholeKwh(totals.consumptionOffHoursKwh) + ' kWh' : 'aucune valeur') + '</strong> (' + totals.consumptionOffHoursCount + ' site(s) renseigné(s))</div>' + gainsHtml + '</div>';
   const resetBtn = document.getElementById('resetCircleBtn');
   const hideBtn = document.getElementById('hideCircleBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetCircle);
@@ -347,29 +684,34 @@ function setCircleDistanceKm(km) {
   activeCircle.setRadius(km * 1000 / 2);
   updateHandlePosition();
   updateCircleStatus();
+  refreshMarkerIcons();
   renderList();
 }
 let circleDragStartMouse = null, circleDragStartCenter = null;
 function onCircleMouseDown(e) {
-  L.DomEvent.stopPropagation(e);
+  if (e.button !== 0) return;
+  L.DomEvent.stop(e);
   map.dragging.disable();
-  circleDragStartMouse = e.latlng;
+  circleDragStartMouse = map.mouseEventToLatLng(e);
   circleDragStartCenter = activeCircle.getLatLng();
   map.on('mousemove', onCircleDragMove);
-  map.on('mouseup', onCircleDragEnd);
+  L.DomEvent.on(document, 'mouseup', onCircleDragEnd);
 }
 function onCircleDragMove(e) {
   const dLat = e.latlng.lat - circleDragStartMouse.lat;
   const dLng = e.latlng.lng - circleDragStartMouse.lng;
   activeCircle.setLatLng([circleDragStartCenter.lat + dLat, circleDragStartCenter.lng + dLng]);
   updateHandlePosition();
+  updateCircleStatus();
+  refreshMarkerIcons();
   renderList();
 }
 function onCircleDragEnd() {
   map.dragging.enable();
   map.off('mousemove', onCircleDragMove);
-  map.off('mouseup', onCircleDragEnd);
+  L.DomEvent.off(document, 'mouseup', onCircleDragEnd);
   updateCircleStatus();
+  refreshMarkerIcons();
   renderList();
 }
 function onHandleDrag(e) {
@@ -377,52 +719,133 @@ function onHandleDrag(e) {
   const newRadius = map.distance(center, e.target.getLatLng());
   activeCircle.setRadius(Math.max(newRadius, 200));
   updateCircleStatus();
+  refreshMarkerIcons();
   renderList();
 }
-function refreshMarkerIcons() { groupedPoints.forEach(point => markers.get(point.ids[0]).setIcon(iconFor(point))); }
+function refreshMarkerIcons() {
+  groupedPoints.forEach(point => {
+    const marker = markers.get(point.ids[0]);
+    if (marker) marker.setIcon(iconFor(point));
+  });
+}
+function handleProjectMarkerClick(point) {
+  if (circleIsVisible()) {
+    const sitesInside = point.addresses.filter(address => pointIsInsideCircle(address));
+    if (!sitesInside.length) return;
+    const shouldInclude = sitesInside.every(address => circleExcludedSiteIds.has(address.id));
+    sitesInside.forEach(address => shouldInclude ? circleExcludedSiteIds.delete(address.id) : circleExcludedSiteIds.add(address.id));
+    refreshMarkerIcons();
+    updateCircleStatus();
+    renderList();
+    return;
+  }
+  activate(point.ids[0], false);
+}
 const SEARCH_PROXIMITY_METERS = 20000;
 function computeSearchProximity() {
-  if (!map || !searchPins.length) return null;
+  if (!map) return null;
+  const selected = visiblePoints.find(point => point.id === activeId);
+  const circleCenter = activeCircle && circleGroup?.hasLayer(activeCircle) ? activeCircle.getLatLng() : null;
+  const origins = selected ? [{ lat: selected.lat, lon: selected.lon, label: selected.project }] :
+    searchPins.length ? searchPins : circleCenter ? [{ lat: circleCenter.lat, lon: circleCenter.lng, label: 'centre du cercle' }] : [];
+  if (!origins.length) return null;
   const proximity = new Map();
   visiblePoints.forEach(point => {
     let best = null;
-    searchPins.forEach(pin => {
-      const d = map.distance([pin.lat, pin.lon], [point.lat, point.lon]);
-      if (d <= SEARCH_PROXIMITY_METERS && (!best || d < best.distance)) best = { distance: d, label: pin.label };
+    origins.forEach(origin => {
+      const d = map.distance([origin.lat, origin.lon], [point.lat, point.lon]);
+      if (d <= SEARCH_PROXIMITY_METERS && (!best || d < best.distance)) best = { distance: d, label: origin.label };
     });
     if (best) proximity.set(point.id, best);
   });
   return proximity;
 }
 function renderList() {
-  const q = search.value.trim().toLowerCase();
-  let filtered;
+  const circleVisible = Boolean(map && activeCircle && circleGroup?.hasLayer(activeCircle));
+  if (!circleVisible) { list.innerHTML = ''; return; }
   const proximity = computeSearchProximity();
-  if (proximity) {
-    filtered = visiblePoints.filter(point => proximity.has(point.id));
-  } else if (map && activeCircle && circleGroup.hasLayer(activeCircle)) {
-    const center = activeCircle.getLatLng();
-    const radius = activeCircle.getRadius();
-    filtered = visiblePoints.filter(point => map.distance([center.lat, center.lng], [point.lat, point.lon]) <= radius);
-  } else {
-    filtered = visiblePoints.filter(point => !q || (point.project + ' ' + point.spv + ' ' + point.address + ' ' + point.city + ' ' + point.matched).toLowerCase().includes(q));
-  }
+  let filtered = proximity ? visiblePoints.filter(point => proximity.has(point.id)) : [];
   filtered = filtered.slice().sort((a, b) => {
     return (a.tariff ?? Infinity) - (b.tariff ?? Infinity) || a.project.localeCompare(b.project, 'fr');
   });
-  list.innerHTML = filtered.map(point => {
+  const selected = visiblePoints.find(point => point.id === activeId);
+  const proximityLabel = selected ? selected.project : searchPins.length === 1 ? searchPins[0].label : searchPins.length ? 'vos repères recherchés' : 'centre du cercle';
+  const listContext = '<div class="list-context">' + filtered.length + ' adresse' + (filtered.length > 1 ? 's' : '') + ' à moins de 20 km de ' + escapeHtml(proximityLabel) + ' · Prix croissant</div>';
+  list.innerHTML = listContext + filtered.map(point => {
     const metaParts = [];
-    if (point.kwc !== null && point.kwc !== undefined) metaParts.push(formatNumber(point.kwc) + ' kWc');
-    if (point.tariff !== null && point.tariff !== undefined) metaParts.push(formatNumber(point.tariff) + ' c\u20ac/kWh');
+    if (Number.isFinite(point.annualKwh)) metaParts.push(formatWholeKwh(point.annualKwh) + ' kWh/an');
+    else if (point.imported || point.manual) {
+      if (point.kwc !== null && point.kwc !== undefined) metaParts.push(formatNumber(point.kwc) + ' kWc');
+    } else metaParts.push('Production non renseignée');
+    if (point.imported && Number.isFinite(point.consumptionProductionHoursKwh)) metaParts.push('Conso. heures de production : ' + formatWholeKwh(point.consumptionProductionHoursKwh) + ' kWh');
+    if (point.imported && Number.isFinite(point.tariffProductionHours)) metaParts.push(formatTariffMwh(point.tariffProductionHours));
+    if (point.imported && Number.isFinite(point.consumptionOffHoursKwh)) metaParts.push('Conso. hors production : ' + formatWholeKwh(point.consumptionOffHoursKwh) + ' kWh');
+    if (point.imported && Number.isFinite(point.tariffOffHours)) metaParts.push(formatTariffMwh(point.tariffOffHours));
+    if (!point.imported && point.accStatus) metaParts.push('ACC : ' + (point.accStatus === 'yes' ? 'Oui' : 'Non'));
+    if (!point.imported && point.accStatus === 'yes' && Number.isFinite(point.accAllocatedKwh)) metaParts.push(formatWholeKwh(point.accAllocatedKwh) + ' kWh affectés à l’ACC');
+    if (!point.imported && point.tariff !== null && point.tariff !== undefined) metaParts.push(formatTariffMwh(point.tariff));
     metaParts.push(escapeHtml(point.spv));
     if (proximity && proximity.has(point.id)) {
       const info = proximity.get(point.id);
       const distKm = Math.round(info.distance / 100) / 10;
       metaParts.push(formatNumber(distKm) + ' km de ' + escapeHtml(info.label));
     }
-    return '<button class="item' + (activeId === point.id ? ' active' : '') + '" data-id="' + point.id + '"><div class="addr">' + escapeHtml(point.project) + ' \u2014 ' + escapeHtml(point.address) + '</div><div class="meta">' + metaParts.join(' \u00b7 ') + '</div></button>';
+    return '<div class="list-row"><button class="item' + (activeId === point.id ? ' active' : '') + '" data-id="' + point.id + '"><div class="addr">' + escapeHtml(point.project) + ' \u2014 ' + escapeHtml(point.address) + '</div><div class="meta">' + metaParts.join(' \u00b7 ') + '</div></button></div>';
   }).join('');
   list.querySelectorAll('.item').forEach(item => item.addEventListener('click', () => activate(Number(item.dataset.id), true)));
+}
+function renderManagementList() {
+  if (managementPanel.hidden) return;
+  const points = visiblePoints.filter(point => managementTab === 'producers' ? !point.imported : point.imported)
+    .slice().sort((a, b) => a.project.localeCompare(b.project, 'fr', { sensitivity: 'base' }) || a.address.localeCompare(b.address, 'fr', { sensitivity: 'base' }));
+  managementList.innerHTML = points.length ? points.map(point => {
+    const meta = [];
+    if (point.imported) {
+      meta.push(Number.isFinite(point.consumptionKwh) ? 'Consommation globale : ' + formatWholeKwh(point.consumptionKwh) + ' kWh' : 'Consommation globale non renseignée');
+      if (Number.isFinite(point.tariff)) meta.push('Tarif moyen global : ' + formatTariffMwh(point.tariff));
+      if (Number.isFinite(point.consumptionProductionHoursKwh)) meta.push('Heures de production : ' + formatWholeKwh(point.consumptionProductionHoursKwh) + ' kWh');
+      if (Number.isFinite(point.tariffProductionHours)) meta.push('Tarif heures de production : ' + formatTariffMwh(point.tariffProductionHours));
+      if (Number.isFinite(point.consumptionOffHoursKwh)) meta.push('Hors heures de production : ' + formatWholeKwh(point.consumptionOffHoursKwh) + ' kWh');
+      if (Number.isFinite(point.tariffOffHours)) meta.push('Tarif hors production : ' + formatTariffMwh(point.tariffOffHours));
+      meta.push(point.consumerOrigin === 'manual' ? 'Ajout manuel' : 'Import CSV');
+    } else {
+      meta.push(Number.isFinite(point.annualKwh) ? formatWholeKwh(point.annualKwh) + ' kWh/an' : 'Production non renseignée');
+      if (Number.isFinite(point.tariff)) meta.push(formatTariffMwh(point.tariff));
+      meta.push('ACC : ' + (point.accStatus === 'yes' ? 'Oui' : point.accStatus === 'no' ? 'Non' : 'À renseigner'));
+      if (point.accStatus === 'yes' && Number.isFinite(point.accAllocatedKwh)) meta.push(formatWholeKwh(point.accAllocatedKwh) + ' kWh affectés');
+    }
+    return '<div class="management-row">' +
+      (point.imported ? '<input class="consumer-select" type="checkbox" data-select-consumer="' + point.id + '" aria-label="Sélectionner ' + escapeHtml(point.project) + '"' + (selectedConsumerIds.has(point.id) ? ' checked' : '') + '>' : '<span></span>') +
+      '<button class="item" type="button" data-manage-open="' + point.id + '"><div class="addr">' + escapeHtml(point.project) + '</div><div class="meta">' + escapeHtml(point.address) + ' · ' + meta.join(' · ') + '</div></button>' +
+      '<button class="edit-central" type="button" data-manage-edit="' + point.id + '">Modifier</button>' +
+      '<button class="remove-address" type="button" data-manage-remove="' + point.id + '" aria-label="Supprimer ' + escapeHtml(point.project) + '">&times;</button></div>';
+  }).join('') : '<div class="management-empty">Aucun site dans cette rubrique.</div>';
+  managementList.querySelectorAll('[data-manage-open]').forEach(button => button.addEventListener('click', () => activate(Number(button.dataset.manageOpen), true)));
+  managementList.querySelectorAll('[data-manage-edit]').forEach(button => button.addEventListener('click', () => managementTab === 'producers' ? openEditCentral(Number(button.dataset.manageEdit)) : openConsumerForm(Number(button.dataset.manageEdit))));
+  managementList.querySelectorAll('[data-manage-remove]').forEach(button => button.addEventListener('click', () => removeSavedAddress(Number(button.dataset.manageRemove))));
+  managementList.querySelectorAll('[data-select-consumer]').forEach(checkbox => checkbox.addEventListener('change', () => {
+    const id = Number(checkbox.dataset.selectConsumer);
+    if (checkbox.checked) selectedConsumerIds.add(id); else selectedConsumerIds.delete(id);
+  }));
+}
+function setManagementOpen(value) {
+  managementPanel.hidden = !value;
+  centralListToggle.classList.toggle('active', value);
+  centralListToggle.setAttribute('aria-expanded', String(value));
+  const label = value ? 'Fermer la gestion des sites' : 'Ouvrir la gestion des sites';
+  centralListToggle.setAttribute('aria-label', label);
+  centralListToggle.title = label;
+  if (value) renderManagementList();
+}
+function setManagementTab(tab) {
+  managementTab = tab === 'consumers' ? 'consumers' : 'producers';
+  producerTab.classList.toggle('active', managementTab === 'producers');
+  consumerTab.classList.toggle('active', managementTab === 'consumers');
+  producerTab.setAttribute('aria-selected', String(managementTab === 'producers'));
+  consumerTab.setAttribute('aria-selected', String(managementTab === 'consumers'));
+  producerActions.hidden = managementTab !== 'producers';
+  consumerActions.hidden = managementTab !== 'consumers';
+  renderManagementList();
 }
 function activate(id, center) {
   activeId = id;
@@ -435,7 +858,6 @@ function activate(id, center) {
   }
   if (center && map && point) {
     map.setView([point.lat, point.lon], Math.max(map.getZoom(), 12), { animate: true });
-    markers.get(id).openPopup();
   }
 }
 function renderPins() {
@@ -448,6 +870,7 @@ function removePin(id) {
   searchPins[idx].marker.remove();
   searchPins.splice(idx, 1);
   renderPins();
+  renderList();
 }
 function clearExternalSearch() {
   if (externalSearchController) {
@@ -459,6 +882,7 @@ function clearExternalSearch() {
   renderPins();
   externalSearchButton.disabled = false;
   searchStatus.textContent = '';
+  renderList();
 }
 async function searchExternalAddress() {
   const query = search.value.trim();
@@ -526,14 +950,27 @@ const CSV_HEADER_MAP = {
   postcode: ['code postal', 'cp', 'postal', 'codepostal', 'postcode', 'zip', 'zip code', 'cp ville'],
   name: ['nom', 'name', 'nom du site', 'site', 'projet', 'project', 'label', 'libelle'],
   kwc: ['kwc', 'puissance', 'power', 'puissance kwc', 'puissance crete'],
-  tariff: ['tarif', 'tariff', 'prix', 'tarif c kwh', 'prix c kwh'],
+  consumptionProductionHours: ['consommation heures production', 'consommation pendant heures production', 'consommation pendant les heures de production', 'conso heures production', 'conso production hours', 'production hours consumption'],
+  tariffProductionHours: ['tarif heures production', 'tarif pendant heures production', 'tarif pendant les heures de production', 'prix heures production', 'production hours tariff'],
+  consumptionOffHours: ['consommation hors heures production', 'consommation en dehors heures production', 'consommation en dehors des heures de production', 'conso hors production', 'off hours consumption'],
+  tariffOffHours: ['tarif hors heures production', 'tarif en dehors heures production', 'tarif en dehors des heures de production', 'prix hors production', 'off hours tariff'],
+  consumption: ['consommation', 'consommation annuelle', 'consommation electrique', 'energie consommee', 'energie soutiree', 'conso', 'conso kwh', 'conso mwh', 'conso elec', 'conso annuelle', 'kwh consommes', 'annual consumption', 'energy consumption', 'electricity consumption', 'electricity usage'],
+  tariff: ['tarif', 'tariff', 'prix', 'tarif c kwh', 'prix c kwh', 'tarif eur mwh', 'prix eur mwh'],
   spv: ['spv', 'societe', 'raison sociale', 'structure']
 };
 const CSV_FIELDS = [
   ['address','Adresse'], ['city','Ville / commune'], ['postcode','Code postal'],
   ['lat','Latitude'], ['lon','Longitude'], ['name','Nom du projet'],
-  ['spv','Société / SPV'], ['kwc','Puissance (kWc)'], ['tariff','Tarif']
+  ['spv','Société / SPV'], ['kwc','Puissance (kWc)'], ['consumption','Consommation (kWh, MWh ou Wh)'], ['tariff','Tarif moyen (c€/kWh ou €/MWh)'],
+  ['consumptionProductionHours','Consommation pendant les heures de production'], ['tariffProductionHours','Tarif pendant les heures de production'],
+  ['consumptionOffHours','Consommation hors heures de production'], ['tariffOffHours','Tarif hors heures de production']
 ];
+const CSV_REVIEW_FIELDS = [
+  ['','Ignorer'], ['name','Nom'], ['address','Adresse'], ['consumption','Consommation globale'], ['tariff','Tarif moyen global'],
+  ['consumptionProductionHours','Consommation pendant les heures de production'], ['tariffProductionHours','Tarif pendant les heures de production'],
+  ['consumptionOffHours','Consommation hors heures de production'], ['tariffOffHours','Tarif hors heures de production']
+];
+const CSV_TARIFF_FIELDS = new Set(['tariff','tariffProductionHours','tariffOffHours']);
 function headerScore(header, alias) {
   if (!header || !alias) return 0;
   if (header === alias) return 100;
@@ -640,6 +1077,41 @@ function parseCsvNumber(value) {
   const number = Number(cleaned);
   return Number.isFinite(number) ? number : NaN;
 }
+function parseConsumptionKwh(value, header) {
+  let input = String(value ?? '').trim().replace(/[\s\u00a0\u202f']/g, '');
+  if (!input) return null;
+  input = input.replace(/(?:\/(?:an|annee|year)|paran|peryear)$/i, '');
+  const cellUnit = input.match(/(mwh|kwh|wh)$/i)?.[1]?.toLowerCase();
+  input = input.replace(/(mwh|kwh|wh)$/i, '');
+  if (!/^[+]?[0-9][0-9.,]*$/.test(input)) return null;
+  const comma = input.lastIndexOf(','), dot = input.lastIndexOf('.');
+  if (comma >= 0 && dot >= 0) {
+    input = comma > dot ? input.replace(/\./g, '').replace(',', '.') : input.replace(/,/g, '');
+  } else {
+    const separator = comma >= 0 ? ',' : '.';
+    const groups = input.split(separator);
+    if (groups.length > 1) {
+      const thousands = groups.slice(1).every(group => group.length === 3) && groups[0].length <= 3;
+      input = thousands ? groups.join('') : groups.length === 2 ? groups.join('.') : '';
+    }
+  }
+  if (!input) return null;
+  const number = Number(input);
+  if (!Number.isFinite(number) || number < 0) return null;
+  const normalizedHeader = normHeader(header);
+  const headerUnit = /\bmwh\b/.test(normalizedHeader) ? 'mwh' : /\bkwh\b/.test(normalizedHeader) ? 'kwh' : /\bwh\b/.test(normalizedHeader) ? 'wh' : 'kwh';
+  const unit = cellUnit || headerUnit;
+  return number * (unit === 'mwh' ? 1000 : unit === 'wh' ? .001 : 1);
+}
+function parseTariffInternal(value, header, forcedUnit = '') {
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+  const numberText = raw.match(/[+]?[0-9][0-9\s\u00a0\u202f.,]*/)?.[0] || '';
+  const number = parseCsvNumber(numberText);
+  if (!Number.isFinite(number) || number < 0) return null;
+  const isMwh = forcedUnit ? forcedUnit === 'mwh' : /\bmwh\b/.test(normHeader(raw + ' ' + (header || '')));
+  return isMwh ? tariffInternalFromMwh(number) : number;
+}
 function isFranceCoordinate(lat, lon) {
   return (lat >= 41 && lat <= 52 && lon >= -6 && lon <= 10) ||
     (lat >= 14 && lat <= 19 && lon >= -64 && lon <= -60) ||
@@ -664,6 +1136,9 @@ function postcodeFromText(value) {
   const match = String(value || '').match(/(?:^|\D)(\d{5})(?:\D|$)/);
   return match ? match[1] : '';
 }
+function nonNegativeNumberOrNull(value) {
+  return value !== null && value !== undefined && Number.isFinite(value) && value >= 0 ? value : null;
+}
 function addImportedPoint(raw, forcedId) {
   const id = forcedId || (nextImportId += 1);
   if (forcedId) nextImportId = Math.max(nextImportId, forcedId + 1);
@@ -671,23 +1146,33 @@ function addImportedPoint(raw, forcedId) {
     id, address: raw.address, lat: raw.lat, lon: raw.lon, citycode: raw.citycode || null,
     project: raw.project || raw.address, spv: raw.spv || 'Import CSV',
     kwc: (raw.kwc !== null && raw.kwc !== undefined && Number.isFinite(raw.kwc)) ? raw.kwc : null,
-    tariff: (raw.tariff !== null && raw.tariff !== undefined && Number.isFinite(raw.tariff)) ? raw.tariff : null,
-    matched: raw.matched || raw.address, city: raw.city || '', color: '#7c3aed', source: 'import-csv', imported: true
+    consumptionKwh: nonNegativeNumberOrNull(raw.consumptionKwh),
+    tariff: nonNegativeNumberOrNull(raw.tariff),
+    consumptionProductionHoursKwh: nonNegativeNumberOrNull(raw.consumptionProductionHoursKwh),
+    tariffProductionHours: nonNegativeNumberOrNull(raw.tariffProductionHours),
+    consumptionOffHoursKwh: nonNegativeNumberOrNull(raw.consumptionOffHoursKwh),
+    tariffOffHours: nonNegativeNumberOrNull(raw.tariffOffHours),
+    matched: raw.matched || raw.address, city: raw.city || '', color: '#7c3aed', source: raw.source || 'import-csv',
+    consumerOrigin: raw.consumerOrigin || (raw.source === 'consumer-manual' ? 'manual' : 'csv'), imported: true
   };
   visiblePoints.push(point);
   const groupEntry = { ...point, ids: [point.id], addresses: [point] };
   groupedPoints.push(groupEntry);
   if (map) {
-    const marker = L.marker([point.lat, point.lon], { icon: iconFor(groupEntry), title: point.project + ' - ' + point.address }).bindPopup(popupFor(groupEntry));
+    const marker = L.marker([point.lat, point.lon], { icon: iconFor(groupEntry) }).bindTooltip(popupFor(groupEntry), { direction: 'top', offset: [0, -8], opacity: 1, sticky: true });
     marker.addTo(markerGroup);
-    marker.on('click', () => activate(point.id, false));
+    marker.on('click', () => handleProjectMarkerClick(groupEntry));
     markers.set(point.id, marker);
   }
   return point;
 }
 function saveImportedPoints() {
   try {
-    const imported = visiblePoints.filter(p => p.imported).map(p => ({ id: p.id, address: p.address, lat: p.lat, lon: p.lon, citycode: p.citycode, project: p.project, spv: p.spv, kwc: p.kwc, tariff: p.tariff, matched: p.matched, city: p.city }));
+    const imported = visiblePoints.filter(p => p.imported).map(p => ({ id: p.id, address: p.address, lat: p.lat, lon: p.lon, citycode: p.citycode, project: p.project, spv: p.spv, kwc: p.kwc,
+      consumptionKwh: p.consumptionKwh, tariff: p.tariff,
+      consumptionProductionHoursKwh: p.consumptionProductionHoursKwh, tariffProductionHours: p.tariffProductionHours,
+      consumptionOffHoursKwh: p.consumptionOffHoursKwh, tariffOffHours: p.tariffOffHours,
+      matched: p.matched, city: p.city, source: p.source, consumerOrigin: p.consumerOrigin }));
     localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(imported));
   } catch (e) { /* stockage indisponible, tant pis */ }
 }
@@ -700,22 +1185,353 @@ function loadImportedPoints() {
     arr.forEach(p => addImportedPoint(p, p.id));
     document.getElementById('addressCount').textContent = visiblePoints.length;
     renderList();
+    renderManagementList();
+    updateCircleStatus();
     importStatusEl.textContent = arr.length + ' adresse(s) import\u00e9e(s) restaur\u00e9e(s) depuis ce navigateur.';
   } catch (e) { /* donn\u00e9es corrompues, on ignore */ }
 }
 function clearImportedPoints() {
   const toRemove = visiblePoints.filter(p => p.imported);
-  if (!toRemove.length) { importStatusEl.textContent = 'Aucun import \u00e0 vider.'; return; }
+  if (!toRemove.length) { importStatusEl.textContent = 'Aucun site consommateur à supprimer.'; return; }
+  if (!window.confirm('Supprimer tous les sites consommateurs ?')) return;
   toRemove.forEach(p => {
     const marker = markers.get(p.id);
     if (marker) { marker.remove(); markers.delete(p.id); }
   });
   visiblePoints = visiblePoints.filter(p => !p.imported);
-  groupedPoints = groupedPoints.filter(g => !g.imported);
+  if (toRemove.some(p => p.id === activeId)) {
+    activeId = null;
+    hideCircle();
+  }
+  rebuildAddressMarkers();
   try { localStorage.removeItem(IMPORT_STORAGE_KEY); } catch (e) { /* ignore */ }
   document.getElementById('addressCount').textContent = visiblePoints.length;
   renderList();
-  importStatusEl.textContent = 'Import vid\u00e9 (' + toRemove.length + ' adresse(s) retir\u00e9e(s)).';
+  renderManagementList();
+  updateCircleStatus();
+  selectedConsumerIds.clear();
+  importStatusEl.textContent = toRemove.length + ' site(s) consommateur(s) supprimé(s).';
+}
+function saveSavedAddressChanges() {
+  try {
+    const added = visiblePoints.filter(point => point.manual).map(point => ({
+      id: point.id, address: point.address, project: point.project, spv: point.spv,
+      kwc: point.kwc, annualKwh: point.annualKwh, tariff: point.tariff, accStatus: point.accStatus || null, accAllocatedKwh: point.accAllocatedKwh ?? null, lat: point.lat, lon: point.lon,
+      citycode: point.citycode, matched: point.matched, city: point.city
+    }));
+    const edited = visiblePoints.filter(point => editedCentralIds.has(point.id) && !point.manual && !point.imported).map(point => ({
+      id: point.id, address: point.address, project: point.project, spv: point.spv,
+      annualKwh: point.annualKwh, tariff: point.tariff, accStatus: point.accStatus || null, accAllocatedKwh: point.accAllocatedKwh ?? null,
+      lat: point.lat, lon: point.lon, citycode: point.citycode, matched: point.matched, city: point.city
+    }));
+    localStorage.setItem(SAVED_ADDRESS_STORAGE_KEY, JSON.stringify({ added, edited, hidden: [...hiddenAddressIds] }));
+    return true;
+  } catch (error) { return false; }
+}
+function loadSavedAddressChanges() {
+  try {
+    const raw = localStorage.getItem(SAVED_ADDRESS_STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.hidden)) saved.hidden.forEach(id => {
+      if (Number.isInteger(id) && id > 0) hiddenAddressIds.add(id);
+    });
+    visiblePoints = visiblePoints.filter(point => !hiddenAddressIds.has(point.id));
+    if (Array.isArray(saved.edited)) saved.edited.forEach(edit => {
+      if (!Number.isInteger(edit.id) || edit.id <= 0) return;
+      const point = visiblePoints.find(existing => existing.id === edit.id && !existing.imported && !existing.manual);
+      if (!point || typeof edit.address !== 'string' || !edit.address.trim() || typeof edit.project !== 'string' || !edit.project.trim()) return;
+      point.address = edit.address;
+      point.project = edit.project;
+      point.spv = typeof edit.spv === 'string' ? edit.spv : point.spv;
+      point.annualKwh = edit.annualKwh === null || (Number.isFinite(edit.annualKwh) && edit.annualKwh >= 0) ? edit.annualKwh : point.annualKwh;
+      point.tariff = edit.tariff === null || (Number.isFinite(edit.tariff) && edit.tariff >= 0) ? edit.tariff : point.tariff;
+      point.accStatus = edit.accStatus === 'yes' || edit.accStatus === 'no' ? edit.accStatus : null;
+      point.accAllocatedKwh = point.accStatus === 'yes' && Number.isFinite(edit.accAllocatedKwh) && edit.accAllocatedKwh >= 0 ? edit.accAllocatedKwh : null;
+      if (Number.isFinite(edit.lat) && Number.isFinite(edit.lon)) { point.lat = edit.lat; point.lon = edit.lon; }
+      point.citycode = edit.citycode === null || typeof edit.citycode === 'string' ? edit.citycode : point.citycode;
+      point.matched = typeof edit.matched === 'string' ? edit.matched : point.matched;
+      point.city = typeof edit.city === 'string' ? edit.city : point.city;
+      editedCentralIds.add(point.id);
+    });
+    if (Array.isArray(saved.added)) saved.added.forEach(point => {
+      if (!Number.isInteger(point.id) || point.id >= 0 || !point.address || !Number.isFinite(point.lat) || !Number.isFinite(point.lon)) return;
+      if (visiblePoints.some(existing => existing.id === point.id)) return;
+      visiblePoints.push({ ...point, accStatus: point.accStatus === 'yes' || point.accStatus === 'no' ? point.accStatus : null, accAllocatedKwh: Number.isFinite(point.accAllocatedKwh) ? point.accAllocatedKwh : null, manual: true, source: 'ajout-manuel', color: '#d83b35',
+        project: point.project || point.address, spv: point.spv || 'Ajout manuel' });
+      nextSavedId = Math.min(nextSavedId, point.id - 1);
+    });
+    groupedPoints = groupPoints(visiblePoints);
+    document.getElementById('addressCount').textContent = visiblePoints.length;
+  } catch (error) { /* stockage indisponible ou données invalides */ }
+}
+function removeSavedAddress(id) {
+  const point = visiblePoints.find(item => item.id === id);
+  if (!point || !window.confirm('Retirer « ' + point.project + ' — ' + point.address + ' » de la liste et de la carte ?')) return;
+  visiblePoints = visiblePoints.filter(item => item.id !== id);
+  let saved = true;
+  if (point.imported) saveImportedPoints();
+  else {
+    if (!point.manual) hiddenAddressIds.add(id);
+    saved = saveSavedAddressChanges();
+  }
+  if (activeId === id) {
+    activeId = null;
+    hideCircle();
+  }
+  rebuildAddressMarkers();
+  document.getElementById('addressCount').textContent = visiblePoints.length;
+  renderList();
+  updateCircleStatus();
+  if (point.imported) importStatusEl.textContent = 'Adresse importée retirée : ' + point.address + '.';
+  else addressStatusEl.textContent = saved ? 'Adresse retirée : ' + point.address + '.' : 'Adresse retirée, mais le changement ne peut pas être conservé dans ce navigateur.';
+  renderManagementList();
+}
+function toggleAccAllocationField() {
+  const isAcc = editCentralForm.elements.namedItem('accStatus').value === 'yes';
+  accAllocationField.hidden = !isAcc;
+  editCentralForm.elements.namedItem('accAllocatedKwh').required = isAcc;
+  if (!isAcc) editCentralForm.elements.namedItem('accAllocatedKwh').value = '';
+  else if (document.activeElement === editCentralForm.elements.namedItem('accStatus')) editCentralForm.elements.namedItem('accAllocatedKwh').focus();
+}
+function openEditCentral(id) {
+  const point = visiblePoints.find(item => item.id === id && !item.imported);
+  if (!point) return;
+  editingCentralId = id;
+  editCentralError.textContent = '';
+  editCentralForm.elements.namedItem('address').value = point.address;
+  editCentralForm.elements.namedItem('project').value = point.project;
+  editCentralForm.elements.namedItem('spv').value = point.spv || '';
+  editCentralForm.elements.namedItem('annualKwh').value = Number.isFinite(point.annualKwh) ? String(point.annualKwh) : '';
+  editCentralForm.elements.namedItem('tariff').value = Number.isFinite(point.tariff) ? String(tariffMwhFromInternal(point.tariff)) : '';
+  editCentralForm.elements.namedItem('accStatus').value = point.accStatus || '';
+  editCentralForm.elements.namedItem('accAllocatedKwh').value = Number.isFinite(point.accAllocatedKwh) ? String(point.accAllocatedKwh) : '';
+  toggleAccAllocationField();
+  editCentralDialog.hidden = false;
+  editCentralForm.elements.namedItem('project').focus();
+}
+function closeEditCentral() {
+  if (editCentralSave.disabled) return;
+  editCentralDialog.hidden = true;
+  editCentralError.textContent = '';
+  editingCentralId = null;
+}
+async function saveEditCentral(event) {
+  event.preventDefault();
+  const point = visiblePoints.find(item => item.id === editingCentralId && !item.imported);
+  if (!point) { closeEditCentral(); return; }
+  const data = new FormData(editCentralForm);
+  const address = String(data.get('address') || '').trim();
+  const project = String(data.get('project') || '').trim();
+  const spv = String(data.get('spv') || '').trim();
+  const kwhText = String(data.get('annualKwh') || '').trim();
+  const tariffText = String(data.get('tariff') || '').trim();
+  const annualKwh = kwhText ? parseCsvNumber(kwhText) : null;
+  const tariffMwh = tariffText ? parseCsvNumber(tariffText) : null;
+  const tariff = Number.isFinite(tariffMwh) ? tariffInternalFromMwh(tariffMwh) : null;
+  const accStatus = String(data.get('accStatus') || '');
+  const allocatedText = String(data.get('accAllocatedKwh') || '').trim();
+  const accAllocatedKwh = allocatedText ? parseCsvNumber(allocatedText) : null;
+  editCentralError.textContent = '';
+  if (!address || !project) { editCentralError.textContent = 'Renseignez le nom du projet et son adresse.'; return; }
+  if ((kwhText && (!Number.isFinite(annualKwh) || annualKwh < 0)) || (tariffText && (!Number.isFinite(tariffMwh) || tariffMwh < 0))) {
+    editCentralError.textContent = 'Production et tarif doivent être des nombres positifs.';
+    return;
+  }
+  if (!['', 'yes', 'no'].includes(accStatus)) { editCentralError.textContent = 'Choisissez un statut ACC valide.'; return; }
+  if (accStatus === 'yes' && !Number.isFinite(annualKwh)) { editCentralError.textContent = 'Renseignez la production annuelle avant d’indiquer une affectation ACC.'; return; }
+  if (accStatus === 'yes' && (!Number.isFinite(accAllocatedKwh) || accAllocatedKwh < 0)) { editCentralError.textContent = 'Renseignez la production affectée à la boucle ACC.'; return; }
+  if (accStatus === 'yes' && Number.isFinite(annualKwh) && accAllocatedKwh > annualKwh) { editCentralError.textContent = 'La production affectée à l’ACC ne peut pas dépasser la production annuelle.'; return; }
+  editCentralSave.disabled = true;
+  try {
+    let found = null;
+    if (address !== point.address) {
+      editCentralError.textContent = 'Localisation de la nouvelle adresse…';
+      found = await geocodeAddress(address);
+      if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
+        editCentralError.textContent = 'Adresse introuvable ou trop imprécise. Complétez-la avant d’enregistrer.';
+        return;
+      }
+    }
+    point.address = address;
+    point.project = project;
+    point.spv = spv;
+    point.annualKwh = annualKwh;
+    point.tariff = tariff;
+    point.accStatus = accStatus || null;
+    point.accAllocatedKwh = accStatus === 'yes' ? accAllocatedKwh : null;
+    if (found) {
+      point.lat = found.lat;
+      point.lon = found.lon;
+      point.citycode = found.citycode || null;
+      point.matched = found.label || address;
+      point.city = found.city || '';
+    }
+    if (!point.manual) editedCentralIds.add(point.id);
+    const saved = saveSavedAddressChanges();
+    rebuildAddressMarkers();
+    editCentralDialog.hidden = true;
+    editingCentralId = null;
+    editCentralError.textContent = '';
+    addressStatusEl.textContent = saved ? 'Centrale modifiée : ' + project + '.' : 'Centrale modifiée, mais le changement ne peut pas être conservé dans ce navigateur.';
+    if (activeId === point.id && found && map) placeCircle(point.lat, point.lon, regRadiusMeters(point.citycode), point.project + ' \u2014 ' + regLabelForCitycode(point.citycode));
+    else { updateCircleStatus(); renderList(); }
+    renderManagementList();
+  } catch (error) {
+    editCentralError.textContent = 'La modification a échoué. Vérifiez votre connexion et réessayez.';
+  } finally { editCentralSave.disabled = false; }
+}
+function openConsumerForm(id = null) {
+  const point = id === null ? null : visiblePoints.find(item => item.id === id && item.imported);
+  if (id !== null && !point) return;
+  editingConsumerId = point ? point.id : null;
+  consumerFormError.textContent = '';
+  document.getElementById('consumerDialogTitle').textContent = point ? 'Modifier un site consommateur' : 'Ajouter un site consommateur';
+  consumerForm.elements.namedItem('address').value = point?.address || '';
+  consumerForm.elements.namedItem('project').value = point?.project || '';
+  consumerForm.elements.namedItem('consumptionKwh').value = Number.isFinite(point?.consumptionKwh) ? String(point.consumptionKwh) : '';
+  consumerForm.elements.namedItem('tariff').value = Number.isFinite(point?.tariff) ? String(tariffMwhFromInternal(point.tariff)) : '';
+  consumerForm.elements.namedItem('consumptionProductionHoursKwh').value = Number.isFinite(point?.consumptionProductionHoursKwh) ? String(point.consumptionProductionHoursKwh) : '';
+  consumerForm.elements.namedItem('tariffProductionHours').value = Number.isFinite(point?.tariffProductionHours) ? String(tariffMwhFromInternal(point.tariffProductionHours)) : '';
+  consumerForm.elements.namedItem('consumptionOffHoursKwh').value = Number.isFinite(point?.consumptionOffHoursKwh) ? String(point.consumptionOffHoursKwh) : '';
+  consumerForm.elements.namedItem('tariffOffHours').value = Number.isFinite(point?.tariffOffHours) ? String(tariffMwhFromInternal(point.tariffOffHours)) : '';
+  consumerDialog.hidden = false;
+  consumerForm.elements.namedItem('address').focus();
+}
+function closeConsumerForm() {
+  if (consumerSave.disabled) return;
+  consumerDialog.hidden = true;
+  consumerFormError.textContent = '';
+  editingConsumerId = null;
+}
+async function saveConsumer(event) {
+  event.preventDefault();
+  const point = editingConsumerId === null ? null : visiblePoints.find(item => item.id === editingConsumerId && item.imported);
+  const data = new FormData(consumerForm);
+  const address = String(data.get('address') || '').trim();
+  const project = String(data.get('project') || '').trim() || address;
+  const consumptionText = String(data.get('consumptionKwh') || '').trim();
+  const tariffText = String(data.get('tariff') || '').trim();
+  const consumptionProductionHoursText = String(data.get('consumptionProductionHoursKwh') || '').trim();
+  const tariffProductionHoursText = String(data.get('tariffProductionHours') || '').trim();
+  const consumptionOffHoursText = String(data.get('consumptionOffHoursKwh') || '').trim();
+  const tariffOffHoursText = String(data.get('tariffOffHours') || '').trim();
+  const consumptionKwh = consumptionText ? parseConsumptionKwh(consumptionText, 'kWh') : null;
+  const tariffMwh = tariffText ? parseCsvNumber(tariffText) : null;
+  const tariff = Number.isFinite(tariffMwh) ? tariffInternalFromMwh(tariffMwh) : null;
+  const consumptionProductionHoursKwh = consumptionProductionHoursText ? parseConsumptionKwh(consumptionProductionHoursText, 'kWh') : null;
+  const tariffProductionHoursMwh = tariffProductionHoursText ? parseCsvNumber(tariffProductionHoursText) : null;
+  const tariffProductionHours = Number.isFinite(tariffProductionHoursMwh) ? tariffInternalFromMwh(tariffProductionHoursMwh) : null;
+  const consumptionOffHoursKwh = consumptionOffHoursText ? parseConsumptionKwh(consumptionOffHoursText, 'kWh') : null;
+  const tariffOffHoursMwh = tariffOffHoursText ? parseCsvNumber(tariffOffHoursText) : null;
+  const tariffOffHours = Number.isFinite(tariffOffHoursMwh) ? tariffInternalFromMwh(tariffOffHoursMwh) : null;
+  consumerFormError.textContent = '';
+  if (!address) { consumerFormError.textContent = 'Renseignez une adresse complète.'; return; }
+  if (consumptionText && (!Number.isFinite(consumptionKwh) || consumptionKwh < 0)) { consumerFormError.textContent = 'La consommation globale doit être un nombre positif.'; return; }
+  if (tariffText && (!Number.isFinite(tariffMwh) || tariffMwh < 0)) { consumerFormError.textContent = 'Le tarif moyen doit être un nombre positif.'; return; }
+  if (consumptionProductionHoursText && (!Number.isFinite(consumptionProductionHoursKwh) || consumptionProductionHoursKwh < 0)) { consumerFormError.textContent = 'La consommation pendant les heures de production doit être un nombre positif.'; return; }
+  if (tariffProductionHoursText && (!Number.isFinite(tariffProductionHoursMwh) || tariffProductionHoursMwh < 0)) { consumerFormError.textContent = 'Le tarif des heures de production doit être un nombre positif.'; return; }
+  if (consumptionOffHoursText && (!Number.isFinite(consumptionOffHoursKwh) || consumptionOffHoursKwh < 0)) { consumerFormError.textContent = 'La consommation hors heures de production doit être un nombre positif.'; return; }
+  if (tariffOffHoursText && (!Number.isFinite(tariffOffHoursMwh) || tariffOffHoursMwh < 0)) { consumerFormError.textContent = 'Le tarif hors heures de production doit être un nombre positif.'; return; }
+  consumerSave.disabled = true;
+  try {
+    let found = null;
+    if (!point || address !== point.address) {
+      consumerFormError.textContent = 'Localisation de l’adresse…';
+      found = await geocodeAddress(address);
+      if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
+        consumerFormError.textContent = 'Adresse introuvable ou trop imprécise. Complétez-la avant d’enregistrer.';
+        return;
+      }
+    }
+    if (point) {
+      point.address = address;
+      point.project = project;
+      point.consumptionKwh = consumptionKwh;
+      point.tariff = tariff;
+      point.consumptionProductionHoursKwh = consumptionProductionHoursKwh;
+      point.tariffProductionHours = tariffProductionHours;
+      point.consumptionOffHoursKwh = consumptionOffHoursKwh;
+      point.tariffOffHours = tariffOffHours;
+      if (found) {
+        point.lat = found.lat; point.lon = found.lon; point.citycode = found.citycode || null;
+        point.matched = found.label || address; point.city = found.city || '';
+      }
+    } else {
+      addImportedPoint({ address, project, spv: 'Site consommateur', consumptionKwh, tariff,
+        consumptionProductionHoursKwh, tariffProductionHours, consumptionOffHoursKwh, tariffOffHours,
+        lat: found.lat, lon: found.lon, citycode: found.citycode || null, matched: found.label || address,
+        city: found.city || '', source: 'consumer-manual', consumerOrigin: 'manual' });
+    }
+    saveImportedPoints();
+    rebuildAddressMarkers();
+    document.getElementById('addressCount').textContent = visiblePoints.length;
+    consumerDialog.hidden = true;
+    editingConsumerId = null;
+    importStatusEl.textContent = point ? 'Site consommateur modifié : ' + project + '.' : 'Site consommateur ajouté : ' + project + '.';
+    updateCircleStatus(); renderList(); renderManagementList();
+  } catch (error) {
+    consumerFormError.textContent = 'L’enregistrement a échoué. Vérifiez votre connexion et réessayez.';
+  } finally { consumerSave.disabled = false; }
+}
+function deleteSelectedConsumerSites() {
+  const ids = [...selectedConsumerIds].filter(id => visiblePoints.some(point => point.id === id && point.imported));
+  if (!ids.length) { importStatusEl.textContent = 'Sélectionnez au moins un site consommateur.'; return; }
+  if (!window.confirm('Supprimer les ' + ids.length + ' site(s) consommateur(s) sélectionné(s) ?')) return;
+  const idSet = new Set(ids);
+  visiblePoints = visiblePoints.filter(point => !idSet.has(point.id));
+  selectedConsumerIds.clear();
+  if (idSet.has(activeId)) { activeId = null; hideCircle(); }
+  saveImportedPoints(); rebuildAddressMarkers();
+  document.getElementById('addressCount').textContent = visiblePoints.length;
+  importStatusEl.textContent = ids.length + ' site(s) consommateur(s) supprimé(s).';
+  updateCircleStatus(); renderList(); renderManagementList();
+}
+async function addSavedAddress(event) {
+  event.preventDefault();
+  if (!map) { addressFormError.textContent = 'La carte doit être chargée pour ajouter une adresse.'; return; }
+  const data = new FormData(addressForm);
+  const address = String(data.get('address') || '').trim();
+  const project = String(data.get('project') || '').trim() || address;
+  const spv = String(data.get('spv') || '').trim() || 'Ajout manuel';
+  const kwhText = String(data.get('annualKwh') || '').trim(), tariffText = String(data.get('tariff') || '').trim();
+  const annualKwh = kwhText ? parseCsvNumber(kwhText) : null;
+  const tariffMwh = tariffText ? parseCsvNumber(tariffText) : null;
+  const tariff = Number.isFinite(tariffMwh) ? tariffInternalFromMwh(tariffMwh) : null;
+  addressFormError.textContent = '';
+  if (!address) { addressFormError.textContent = 'Saisissez une adresse complète.'; return; }
+  if ((kwhText && !Number.isFinite(annualKwh)) || (tariffText && !Number.isFinite(tariffMwh))) {
+    addressFormError.textContent = 'Vérifiez la production annuelle et le tarif : utilisez des nombres.';
+    return;
+  }
+  if (visiblePoints.some(point => canonicalAddress(point.address) === canonicalAddress(address) && normHeader(point.project) === normHeader(project))) {
+    addressFormError.textContent = 'Cette adresse avec ce nom de projet est déjà enregistrée.';
+    return;
+  }
+  addressSaveButton.disabled = true;
+  addressFormError.textContent = 'Localisation de l’adresse…';
+  try {
+    const found = await geocodeAddress(address);
+    if (found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
+      addressFormError.textContent = found.reason === 'confidence' ? 'Adresse trop imprécise : complétez-la avec le numéro, le code postal et la ville.' : 'Adresse introuvable : vérifiez son orthographe et son code postal.';
+      return;
+    }
+    const id = nextSavedId--;
+    visiblePoints.push({ id, address, project, spv, annualKwh, tariff, accStatus: null, accAllocatedKwh: null, lat: found.lat, lon: found.lon,
+      citycode: found.citycode || null, matched: found.label || address, city: found.city || '',
+      manual: true, source: 'ajout-manuel', color: '#d83b35' });
+    rebuildAddressMarkers();
+    document.getElementById('addressCount').textContent = visiblePoints.length;
+    addressStatusEl.textContent = saveSavedAddressChanges() ? 'Centrale ajoutée : ' + address + '.' : 'Centrale ajoutée, mais elle ne peut pas être conservée dans ce navigateur.';
+    renderManagementList();
+    addressForm.reset();
+    addressDialog.hidden = true;
+    search.value = '';
+    activate(id, true);
+    if (searchPins.length) addressStatusEl.textContent += ' La liste reste filtrée par les repères temporaires.';
+  } catch (error) {
+    addressFormError.textContent = 'La localisation a échoué. Vérifiez votre connexion Internet et réessayez.';
+  } finally { addressSaveButton.disabled = false; }
 }
 async function fetchJsonWithRetry(url) {
   let lastError;
@@ -747,7 +1563,7 @@ async function geocodeAddress(query) {
   if (score < threshold) return { rejected: true, reason: 'confidence', score };
   return {
     lat: feature.geometry.coordinates[1], lon: feature.geometry.coordinates[0],
-    citycode: properties.citycode, label: properties.label, postcode: properties.postcode, score
+    citycode: properties.citycode, label: properties.label, city: properties.city, postcode: properties.postcode, score
   };
 }
 async function reverseCitycode(lat, lon) {
@@ -764,19 +1580,36 @@ function closeCsvMapping() {
 function openCsvMapping(state) {
   pendingCsvImport = state;
   const delimiterNames = { ',':'virgule', ';':'point-virgule', '\t':'tabulation', '|':'barre verticale' };
-  csvMappingSummary.textContent = state.dataRows.length + ' ligne(s) détectée(s), séparateur : ' + (delimiterNames[state.delimiter] || state.delimiter) + '. Associez au minimum une adresse ou le couple latitude/longitude.';
-  const optionHtml = state.rawHeaders.map((header, index) => '<option value="' + index + '">' + escapeHtml(header || ('Colonne ' + (index + 1))) + '</option>').join('');
-  csvMappingGrid.innerHTML = CSV_FIELDS.map(([key, label]) => {
-    const selected = Number.isInteger(state.idx[key]) ? state.idx[key] : -1;
-    return '<label>' + escapeHtml(label) + '<select data-csv-field="' + key + '"><option value="-1">Non utilisé</option>' + optionHtml + '</select></label>';
-  }).join('');
-  csvMappingGrid.querySelectorAll('select').forEach(select => {
-    const value = state.idx[select.dataset.csvField];
-    select.value = value >= 0 ? String(value) : '-1';
+  csvMappingSummary.textContent = state.dataRows.length + ' ligne(s) détectée(s), séparateur : ' + (delimiterNames[state.delimiter] || state.delimiter) + '. Vérifiez le rôle attribué à chaque colonne. Pour chaque tarif, contrôlez aussi l’unité c€/kWh ou €/MWh avant l’import.';
+  const reviewKeys = CSV_REVIEW_FIELDS.map(([key]) => key).filter(Boolean);
+  const assignments = state.rawHeaders.map((_, columnIndex) => reviewKeys.find(key => state.idx[key] === columnIndex) || '');
+  const optionHtml = CSV_REVIEW_FIELDS.map(([key, label]) => '<option value="' + key + '">' + escapeHtml(label) + '</option>').join('');
+  const previewRows = state.dataRows.slice(0, 6);
+  csvMappingGrid.innerHTML = '<table class="csv-review-table"><thead><tr>' + state.rawHeaders.map((header, columnIndex) =>
+    '<th><select data-csv-column="' + columnIndex + '" aria-label="Correspondance de la colonne ' + escapeHtml(header || String(columnIndex + 1)) + '">' + optionHtml + '</select>' +
+    '<select class="csv-tariff-unit" data-csv-unit="' + columnIndex + '" aria-label="Unité tarifaire de la colonne ' + escapeHtml(header || String(columnIndex + 1)) + '" hidden><option value="ckwh">c€/kWh</option><option value="mwh">€/MWh</option></select>' +
+    '<span class="csv-source-title" title="' + escapeHtml(header) + '">CSV : ' + escapeHtml(header || ('Colonne ' + (columnIndex + 1))) + '</span></th>'
+  ).join('') + '</tr></thead><tbody>' + previewRows.map(row => '<tr>' + state.rawHeaders.map((_, index) =>
+    '<td title="' + escapeHtml(row[index] || '') + '">' + escapeHtml(row[index] || '') + '</td>'
+  ).join('') + '</tr>').join('') + '</tbody></table>';
+  const updateTariffUnitVisibility = () => csvMappingGrid.querySelectorAll('[data-csv-column]').forEach(select => {
+    const unitSelect = csvMappingGrid.querySelector('[data-csv-unit="' + select.dataset.csvColumn + '"]');
+    if (unitSelect) unitSelect.hidden = !CSV_TARIFF_FIELDS.has(select.value);
   });
-  const previewRows = state.dataRows.slice(0, 4);
-  csvPreview.innerHTML = '<table class="csv-preview"><thead><tr>' + state.rawHeaders.map(header => '<th title="' + escapeHtml(header) + '">' + escapeHtml(header) + '</th>').join('') + '</tr></thead><tbody>' +
-    previewRows.map(row => '<tr>' + state.rawHeaders.map((_, index) => '<td title="' + escapeHtml(row[index] || '') + '">' + escapeHtml(row[index] || '') + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+  csvMappingGrid.querySelectorAll('[data-csv-column]').forEach((select, columnIndex) => {
+    select.value = assignments[columnIndex];
+    const unitSelect = csvMappingGrid.querySelector('[data-csv-unit="' + columnIndex + '"]');
+    if (unitSelect) unitSelect.value = /\bmwh\b/.test(normHeader(state.rawHeaders[columnIndex])) ? 'mwh' : 'ckwh';
+    select.addEventListener('change', () => {
+      if (select.value) csvMappingGrid.querySelectorAll('[data-csv-column]').forEach(other => {
+        if (other !== select && other.value === select.value) other.value = '';
+      });
+      updateTariffUnitVisibility();
+      csvMappingError.textContent = '';
+    });
+  });
+  updateTariffUnitVisibility();
+  csvPreview.innerHTML = '';
   csvMappingDialog.hidden = false;
   csvMappingGrid.querySelector('select')?.focus();
 }
@@ -789,17 +1622,26 @@ function duplicateKeys() {
   });
   return { addresses, coordinates };
 }
-async function importCsvRows(dataRows, idx) {
+async function importCsvRows(dataRows, idx, rawHeaders = [], tariffUnits = {}) {
   if (!dataRows.length) { importStatusEl.textContent = 'Le fichier ne contient aucune ligne à importer.'; return; }
   importCsvButton.disabled = true;
-  let added = 0, failed = 0, duplicates = 0, lowConfidence = 0, swapped = 0;
+  let added = 0, failed = 0, duplicates = 0, lowConfidence = 0, swapped = 0, consumptionValues = 0, invalidConsumption = 0;
   const seen = duplicateKeys();
   try {
     for (let i = 0; i < dataRows.length; i++) {
       const r = dataRows[i];
       importStatusEl.textContent = 'Import ' + (i + 1) + '/' + dataRows.length + '…';
       const name = csvCell(r, idx.name), spv = csvCell(r, idx.spv), city = csvCell(r, idx.city), postcode = csvCell(r, idx.postcode);
-      const kwcRaw = parseCsvNumber(csvCell(r, idx.kwc)), tariffRaw = parseCsvNumber(csvCell(r, idx.tariff));
+      const kwcRaw = parseCsvNumber(csvCell(r, idx.kwc));
+      const tariffRaw = parseTariffInternal(csvCell(r, idx.tariff), rawHeaders[idx.tariff], tariffUnits[idx.tariff]);
+      const consumptionText = csvCell(r, idx.consumption);
+      const consumptionKwh = parseConsumptionKwh(consumptionText, rawHeaders[idx.consumption]);
+      const consumptionProductionHoursText = csvCell(r, idx.consumptionProductionHours);
+      const consumptionProductionHoursKwh = parseConsumptionKwh(consumptionProductionHoursText, rawHeaders[idx.consumptionProductionHours]);
+      const tariffProductionHours = parseTariffInternal(csvCell(r, idx.tariffProductionHours), rawHeaders[idx.tariffProductionHours], tariffUnits[idx.tariffProductionHours]);
+      const consumptionOffHoursText = csvCell(r, idx.consumptionOffHours);
+      const consumptionOffHoursKwh = parseConsumptionKwh(consumptionOffHoursText, rawHeaders[idx.consumptionOffHours]);
+      const tariffOffHours = parseTariffInternal(csvCell(r, idx.tariffOffHours), rawHeaders[idx.tariffOffHours], tariffUnits[idx.tariffOffHours]);
       let addressLabel = csvCell(r, idx.address);
       if (postcode && !addressLabel.includes(postcode)) addressLabel = (addressLabel + ' ' + postcode).trim();
       if (city && !canonicalAddress(addressLabel).includes(canonicalAddress(city))) addressLabel = (addressLabel + ' ' + city).trim();
@@ -825,15 +1667,23 @@ async function importCsvRows(dataRows, idx) {
       if (!coordinates) { failed++; continue; }
       const coordKey = coordinateKey(coordinates.lat, coordinates.lon);
       if (seen.coordinates.has(coordKey)) { duplicates++; continue; }
-      addImportedPoint({ address: addressLabel || matched, lat: coordinates.lat, lon: coordinates.lon, citycode, project: name || addressLabel || matched, spv, kwc: kwcRaw, tariff: tariffRaw, matched, city });
+      addImportedPoint({ address: addressLabel || matched, lat: coordinates.lat, lon: coordinates.lon, citycode, project: name || addressLabel || matched, spv: spv || 'Site consommateur', kwc: kwcRaw,
+        consumptionKwh, tariff: tariffRaw, consumptionProductionHoursKwh, tariffProductionHours, consumptionOffHoursKwh, tariffOffHours,
+        matched, city, source: 'import-csv', consumerOrigin: 'csv' });
+      if ([consumptionKwh, consumptionProductionHoursKwh, consumptionOffHoursKwh].some(Number.isFinite)) consumptionValues++;
+      if ((consumptionText && consumptionKwh === null) || (consumptionProductionHoursText && consumptionProductionHoursKwh === null) || (consumptionOffHoursText && consumptionOffHoursKwh === null)) invalidConsumption++;
       if (addressKey) seen.addresses.add(addressKey);
       seen.coordinates.add(coordKey);
       added++;
     }
     document.getElementById('addressCount').textContent = visiblePoints.length;
     renderList();
+    updateCircleStatus();
     saveImportedPoints();
+    renderManagementList();
     const details = [];
+    if (idx.consumption >= 0) details.push(consumptionValues + ' consommation(s) lue(s)');
+    if (invalidConsumption) details.push(invalidConsumption + ' consommation(s) non chiffrée(s)');
     if (duplicates) details.push(duplicates + ' doublon(s) ignoré(s)');
     if (failed) details.push(failed + ' ligne(s) non localisée(s)');
     if (lowConfidence) details.push(lowConfidence + ' résultat(s) trop incertain(s)');
@@ -852,23 +1702,16 @@ async function handleCsvFile(file) {
     const rows = parsed.rows;
     if (!rows.length) { importStatusEl.textContent = 'Fichier CSV vide ou illisible.'; return; }
     const detected = detectColumns(rows[0]);
-    const recognizedCount = Object.values(detected.details).filter(detail => detail.score > 0).length;
     let rawHeaders = rows[0].map((header, index) => String(header || ('Colonne ' + (index + 1))).trim());
     let dataRows = rows.slice(1);
     let idx = detected.idx;
-    if (!recognizedCount && rows[0].length === 1) {
+    if (!Object.values(detected.details).some(detail => detail.score > 0) && rows[0].length === 1) {
       rawHeaders = ['Adresse'];
       dataRows = rows;
       idx = Object.fromEntries(CSV_FIELDS.map(([key]) => [key, key === 'address' ? 0 : -1]));
     }
-    const hasLocation = idx.address >= 0 || (idx.lat >= 0 && idx.lon >= 0);
-    const ambiguousLocation = ['address','lat','lon'].some(key => detected.details[key] && detected.details[key].ambiguous);
-    if (!hasLocation || ambiguousLocation || !recognizedCount) {
-      openCsvMapping({ rawHeaders, dataRows, idx, delimiter: parsed.delimiter });
-      importStatusEl.textContent = 'Vérifiez l’association des colonnes pour poursuivre.';
-      return;
-    }
-    await importCsvRows(dataRows, idx);
+    openCsvMapping({ rawHeaders, dataRows, idx, delimiter: parsed.delimiter });
+    importStatusEl.textContent = 'Vérifiez le tableau et l’association des colonnes pour poursuivre.';
   } catch (error) {
     importStatusEl.textContent = 'Impossible de lire ce CSV. Vérifiez son format puis réessayez.';
   } finally {
@@ -876,6 +1719,37 @@ async function handleCsvFile(file) {
   }
 }
 search.addEventListener('input', renderList);
+centralListToggle.addEventListener('click', () => setManagementOpen(managementPanel.hidden));
+managementClose.addEventListener('click', () => setManagementOpen(false));
+producerTab.addEventListener('click', () => setManagementTab('producers'));
+consumerTab.addEventListener('click', () => setManagementTab('consumers'));
+addAddressButton.addEventListener('click', () => {
+  addressFormError.textContent = '';
+  addressDialog.hidden = false;
+  addressForm.querySelector('[name="address"]').focus();
+});
+addressCancelButton.addEventListener('click', () => {
+  if (addressSaveButton.disabled) return;
+  addressDialog.hidden = true;
+  addressFormError.textContent = '';
+});
+addressDialog.addEventListener('click', event => {
+  if (event.target === addressDialog && !addressSaveButton.disabled) addressCancelButton.click();
+});
+addressForm.addEventListener('submit', addSavedAddress);
+editCentralCancel.addEventListener('click', closeEditCentral);
+editCentralDialog.addEventListener('click', event => {
+  if (event.target === editCentralDialog) closeEditCentral();
+});
+editCentralForm.addEventListener('submit', saveEditCentral);
+editCentralForm.elements?.namedItem('accStatus')?.addEventListener?.('change', toggleAccAllocationField);
+addConsumerBtn.addEventListener('click', () => openConsumerForm());
+consumerCancel.addEventListener('click', closeConsumerForm);
+consumerDialog.addEventListener('click', event => {
+  if (event.target === consumerDialog) closeConsumerForm();
+});
+consumerForm.addEventListener('submit', saveConsumer);
+deleteSelectedConsumers.addEventListener('click', deleteSelectedConsumerSites);
 search.addEventListener('keydown', event => {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -898,33 +1772,54 @@ csvMappingCancel.addEventListener('click', () => {
 });
 csvMappingConfirm.addEventListener('click', async () => {
   if (!pendingCsvImport) return;
-  const idx = Object.fromEntries(CSV_FIELDS.map(([key]) => {
-    const select = csvMappingGrid.querySelector('[data-csv-field="' + key + '"]');
-    return [key, Number(select ? select.value : -1)];
-  }));
-  if (idx.address < 0 && !(idx.lat >= 0 && idx.lon >= 0)) {
-    csvMappingError.textContent = 'Choisissez une colonne adresse, ou une latitude et une longitude.';
-    return;
-  }
-  if (idx.lat >= 0 && idx.lat === idx.lon) {
-    csvMappingError.textContent = 'La latitude et la longitude doivent utiliser deux colonnes différentes.';
+  const idx = Object.fromEntries(CSV_FIELDS.map(([key]) => [key, -1]));
+  const tariffUnits = {};
+  csvMappingGrid.querySelectorAll('[data-csv-column]').forEach(select => {
+    if (!select.value) return;
+    const columnIndex = Number(select.dataset.csvColumn);
+    idx[select.value] = columnIndex;
+    if (CSV_TARIFF_FIELDS.has(select.value)) {
+      const unitSelect = csvMappingGrid.querySelector('[data-csv-unit="' + columnIndex + '"]');
+      tariffUnits[columnIndex] = unitSelect?.value || 'ckwh';
+    }
+  });
+  if (idx.address < 0) {
+    csvMappingError.textContent = 'Choisissez la colonne qui contient les adresses.';
     return;
   }
   const state = pendingCsvImport;
   pendingCsvImport = null;
   closeCsvMapping();
-  await importCsvRows(state.dataRows, idx);
+  await importCsvRows(state.dataRows, idx, state.rawHeaders, tariffUnits);
 });
 csvMappingDialog.addEventListener('click', event => {
   if (event.target === csvMappingDialog) csvMappingCancel.click();
 });
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !addressDialog.hidden && !addressSaveButton.disabled) addressCancelButton.click();
+  if (event.key === 'Escape' && !editCentralDialog.hidden && !editCentralSave.disabled) closeEditCentral();
+  if (event.key === 'Escape' && !consumerDialog.hidden && !consumerSave.disabled) closeConsumerForm();
   if (event.key === 'Escape' && !csvMappingDialog.hidden) csvMappingCancel.click();
 });
 clearImportButton.addEventListener('click', clearImportedPoints);
+toggleCisButton.addEventListener('click', () => {
+  if (!cisLayer || !cisSites.length) return;
+  cisVisible = !cisVisible;
+  toggleCisButton.textContent = cisVisible ? 'Masquer les centres' : 'Afficher les centres';
+  toggleCisButton.setAttribute('aria-pressed', String(cisVisible));
+  if (cisVisible) {
+    cisLayer.addTo(map);
+    renderCisSites();
+  } else {
+    map.removeLayer(cisLayer);
+    cisLayer.clearLayers();
+  }
+  cisStatusEl.textContent = cisSites.length.toLocaleString('fr-FR') + ' centres d’incendie et de secours ' + (cisVisible ? 'affichés.' : 'masqués.');
+});
 radiusPresetsEl.querySelectorAll('button[data-km]').forEach(btn => {
   btn.addEventListener('click', () => setCircleDistanceKm(Number(btn.dataset.km)));
 });
+loadSavedAddressChanges();
 if (!window.L) {
   document.getElementById('map').innerHTML = '<div class="offline">Le fond de carte n\u00e9cessite une connexion Internet pour charger OpenStreetMap. Les donn\u00e9es sont bien dans ce fichier, mais la carte interactive ne peut pas d\u00e9marrer sans Leaflet.</div>';
   renderList();
@@ -934,15 +1829,20 @@ if (!window.L) {
   map.createPane('zonePane');
   map.getPane('zonePane').style.zIndex = 250;
   map.getPane('zonePane').style.pointerEvents = 'none';
+  map.createPane('cisPane');
+  map.getPane('cisPane').style.zIndex = 430;
   loadZoneLayer();
   circleGroup = L.layerGroup().addTo(map);
+  cisLayer = L.layerGroup().addTo(map);
+  map.on('moveend zoomend', renderCisSites);
+  loadCisSites();
   markerGroup = L.layerGroup().addTo(map);
   buildLayers();
   loadImportedPoints();
   renderList();
   setTimeout(() => {
     map.invalidateSize();
-    if (!circleContext) map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
+    if (!circleContext && visiblePoints.length) map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
   }, 150);
   window.addEventListener('resize', () => map.invalidateSize());
 }
