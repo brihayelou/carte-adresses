@@ -58,6 +58,9 @@
   .circle-status button { border:0; background:none; min-height:auto; color:var(--accent); cursor:pointer; font:inherit; padding:0; text-decoration:underline; }
   .circle-status button:hover { background:none; }
   .circle-totals { margin-top:7px; display:grid; gap:2px; color:var(--ink); }
+  .circle-status .gain-info-button { display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; margin-left:4px; border:1px solid currentColor; border-radius:50%; font-size:11px; font-weight:750; line-height:1; text-decoration:none; vertical-align:1px; }
+  .circle-status .gain-info-button:hover { color:#fff; background:var(--accent); }
+  .gain-info-detail[hidden] { display:none; }
   .radius-presets { display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .radius-presets-label { font-size:12px; color:var(--muted); }
   .radius-presets button { min-height:26px; padding:0 10px; font-size:12px; }
@@ -663,8 +666,8 @@ function updateCircleStatus() {
   const distanceKm = Math.round(radiusKm * 2 * 10) / 10;
   const totals = circleEnergyTotals();
   const gainsHtml = Number.isFinite(totals.potentialGainsEuro)
-    ? '<div>Gains potentiels annuels : <strong>' + formatEuro(totals.potentialGainsEuro) + '</strong> <span class="legend-note">' + formatWholeKwh(totals.matchedEnergyKwh) + ' kWh retenus (minimum entre production disponible et consommation en heures de production) × (' + formatNumber(totals.averagePurchaseTariffMwh) + ' − ' + formatNumber(totals.averageSaleTariffMwh) + ') €/MWh ÷ 1 000</span></div>'
-    : '<div>Gains potentiels annuels : <strong>calcul impossible</strong> <span class="legend-note">Renseignez les tarifs pendant les heures de production des consommateurs et les tarifs de vente des centrales.</span></div>';
+    ? '<div>Gains potentiels annuels : <strong>' + formatEuro(totals.potentialGainsEuro) + '</strong><button type="button" class="gain-info-button" id="gainsInfoBtn" aria-label="Afficher l’explication du calcul" aria-expanded="false" aria-controls="gainsInfoDetail">i</button><span class="legend-note gain-info-detail" id="gainsInfoDetail" hidden>' + formatWholeKwh(totals.matchedEnergyKwh) + ' kWh retenus (minimum entre production disponible et consommation en heures de production) × (' + formatNumber(totals.averagePurchaseTariffMwh) + ' − ' + formatNumber(totals.averageSaleTariffMwh) + ') €/MWh ÷ 1 000</span></div>'
+    : '<div>Gains potentiels annuels : <strong>calcul impossible</strong><button type="button" class="gain-info-button" id="gainsInfoBtn" aria-label="Afficher l’explication du calcul" aria-expanded="false" aria-controls="gainsInfoDetail">i</button><span class="legend-note gain-info-detail" id="gainsInfoDetail" hidden>Renseignez les tarifs pendant les heures de production des consommateurs et les tarifs de vente des centrales.</span></div>';
   circleStatusEl.innerHTML = 'Cercle : ' + formatNumber(distanceKm) + ' km (rayon ' + formatNumber(km) + ' km)' + (circleContext && circleContext.label ? ' \u2014 ' + escapeHtml(circleContext.label) : '') + ' \u00b7 <button type="button" id="resetCircleBtn">R\u00e9initialiser</button> \u00b7 <button type="button" id="hideCircleBtn">Masquer</button>' +
     '<div class="circle-totals"><div>Production annuelle disponible : <strong>' + formatWholeKwh(totals.productionKwh) + ' kWh</strong> (' + totals.productionCount + ' site(s))</div>' +
     (totals.accAdjustedCount ? '<div>Production déjà affectée à l\u2019ACC : ' + formatWholeKwh(totals.accAllocatedKwh) + ' kWh (' + totals.accAdjustedCount + ' site(s))</div>' : '') +
@@ -672,8 +675,15 @@ function updateCircleStatus() {
     '<div>Consommation hors heures de production : <strong>' + (totals.consumptionOffHoursCount ? formatWholeKwh(totals.consumptionOffHoursKwh) + ' kWh' : 'aucune valeur') + '</strong> (' + totals.consumptionOffHoursCount + ' site(s) renseigné(s))</div>' + gainsHtml + '</div>';
   const resetBtn = document.getElementById('resetCircleBtn');
   const hideBtn = document.getElementById('hideCircleBtn');
+  const gainsInfoBtn = document.getElementById('gainsInfoBtn');
+  const gainsInfoDetail = document.getElementById('gainsInfoDetail');
   if (resetBtn) resetBtn.addEventListener('click', resetCircle);
   if (hideBtn) hideBtn.addEventListener('click', hideCircle);
+  if (gainsInfoBtn && gainsInfoDetail) gainsInfoBtn.addEventListener('click', () => {
+    gainsInfoDetail.hidden = !gainsInfoDetail.hidden;
+    gainsInfoBtn.setAttribute('aria-expanded', String(!gainsInfoDetail.hidden));
+    gainsInfoBtn.setAttribute('aria-label', gainsInfoDetail.hidden ? 'Afficher l’explication du calcul' : 'Masquer l’explication du calcul');
+  });
   presetButtons.forEach(btn => {
     btn.disabled = false;
     btn.classList.toggle('active', Math.abs(Number(btn.dataset.km) - distanceKm) < 0.05);
