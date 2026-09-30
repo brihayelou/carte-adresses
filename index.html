@@ -186,10 +186,16 @@
     <button id="producerTab" type="button" class="active" role="tab" aria-selected="true">Sites producteurs</button>
     <button id="consumerTab" type="button" role="tab" aria-selected="false">Sites consommateurs</button>
   </div>
-  <div class="management-actions" id="producerActions"><button id="addAddressBtn" type="button">Ajouter une centrale</button></div>
+  <div class="management-actions" id="producerActions">
+    <button id="addAddressBtn" type="button">Ajouter une centrale</button>
+    <button id="exportProducerCsvBtn" type="button">Exporter le CSV</button>
+    <button id="importProducerCsvBtn" type="button">Réimporter un CSV</button>
+    <input type="file" id="producerCsvFile" accept=".csv" style="display:none">
+  </div>
   <div class="management-actions" id="consumerActions" hidden>
     <button id="addConsumerBtn" type="button">Ajouter un site</button>
     <button id="importCsvBtn" type="button">Importer un CSV</button>
+    <button id="exportConsumerCsvBtn" type="button">Exporter le CSV</button>
     <button id="deleteSelectedConsumers" type="button">Supprimer la sélection</button>
     <button id="clearImportBtn" type="button">Tout supprimer</button>
     <input type="file" id="csvFile" accept=".csv" style="display:none">
@@ -319,6 +325,10 @@ const pinsEl = document.getElementById('pins');
 const circleStatusEl = document.getElementById('circleStatus');
 const radiusPresetsEl = document.getElementById('radiusPresets');
 const importCsvButton = document.getElementById('importCsvBtn');
+const exportProducerCsvButton = document.getElementById('exportProducerCsvBtn');
+const importProducerCsvButton = document.getElementById('importProducerCsvBtn');
+const producerCsvFileInput = document.getElementById('producerCsvFile');
+const exportConsumerCsvButton = document.getElementById('exportConsumerCsvBtn');
 const clearImportButton = document.getElementById('clearImportBtn');
 const csvFileInput = document.getElementById('csvFile');
 const importStatusEl = document.getElementById('importStatus');
@@ -953,6 +963,7 @@ function normHeader(h) {
     .toLowerCase().replace(/[_./()\\-]+/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 }
 const CSV_HEADER_MAP = {
+  id: ['identifiant', 'identifiant a ne pas modifier', 'id', 'site id', 'site_id'],
   lat: ['latitude', 'lat', 'coordonnee y', 'coordonnees y', 'y', 'latitude wgs84', 'lat wgs84'],
   lon: ['longitude', 'lon', 'lng', 'long', 'coordonnee x', 'coordonnees x', 'x', 'longitude wgs84', 'lon wgs84'],
   address: ['adresse', 'address', 'adresse complete', 'adresse postale', 'adresse du site', 'adresse site', 'rue', 'voie', 'street', 'localisation'],
@@ -969,14 +980,14 @@ const CSV_HEADER_MAP = {
   spv: ['spv', 'societe', 'raison sociale', 'structure']
 };
 const CSV_FIELDS = [
-  ['address','Adresse'], ['city','Ville / commune'], ['postcode','Code postal'],
+  ['id','Identifiant'], ['address','Adresse'], ['city','Ville / commune'], ['postcode','Code postal'],
   ['lat','Latitude'], ['lon','Longitude'], ['name','Nom du projet'],
   ['spv','Société / SPV'], ['kwc','Puissance (kWc)'], ['consumption','Consommation (kWh, MWh ou Wh)'], ['tariff','Tarif moyen (c€/kWh ou €/MWh)'],
   ['consumptionProductionHours','Consommation pendant les heures de production'], ['tariffProductionHours','Tarif pendant les heures de production'],
   ['consumptionOffHours','Consommation hors heures de production'], ['tariffOffHours','Tarif hors heures de production']
 ];
 const CSV_REVIEW_FIELDS = [
-  ['','Ignorer'], ['name','Nom'], ['address','Adresse'], ['consumption','Consommation globale'], ['tariff','Tarif moyen global'],
+  ['','Ignorer'], ['id','Identifiant (ne pas modifier)'], ['name','Nom'], ['address','Adresse'], ['consumption','Consommation globale'], ['tariff','Tarif moyen global'],
   ['consumptionProductionHours','Consommation pendant les heures de production'], ['tariffProductionHours','Tarif pendant les heures de production'],
   ['consumptionOffHours','Consommation hors heures de production'], ['tariffOffHours','Tarif hors heures de production']
 ];
@@ -1142,6 +1153,66 @@ function normalizeCoordinates(rawLat, rawLon) {
 function canonicalAddress(value) { return normHeader(value).replace(/\b(cedex|france)\b/g, '').trim(); }
 function coordinateKey(lat, lon) { return Number(lat).toFixed(5) + ',' + Number(lon).toFixed(5); }
 function csvCell(row, index) { return index >= 0 ? String(row[index] ?? '').trim() : ''; }
+function csvExportCell(value) {
+  const text = value === null || value === undefined ? '' : String(value);
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+function csvExportNumber(value) {
+  return Number.isFinite(value) ? String(value).replace('.', ',') : '';
+}
+function downloadCsv(filename, headers, rows) {
+  const content = '\uFEFF' + [headers, ...rows].map(row => row.map(csvExportCell).join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function exportProducerCsv() {
+  const producers = visiblePoints.filter(point => !point.imported)
+    .slice().sort((a, b) => a.project.localeCompare(b.project, 'fr', { sensitivity: 'base' }));
+  if (!producers.length) { addressStatusEl.textContent = 'Aucune centrale à exporter.'; return; }
+  const headers = ['Identifiant à ne pas modifier', 'Nom', 'Adresse', 'Société / SPV', 'Production annuelle (kWh)', 'Tarif (€/MWh)', 'ACC', 'Production affectée ACC (kWh)', 'Latitude', 'Longitude'];
+  const rows = producers.map(point => [
+    point.id, point.project, point.address, point.spv || '', csvExportNumber(point.annualKwh),
+    csvExportNumber(Number.isFinite(point.tariff) ? tariffMwhFromInternal(point.tariff) : null),
+    point.accStatus === 'yes' ? 'Oui' : point.accStatus === 'no' ? 'Non' : '',
+    csvExportNumber(point.accStatus === 'yes' ? point.accAllocatedKwh : null),
+    csvExportNumber(point.lat), csvExportNumber(point.lon)
+  ]);
+  downloadCsv('sites-producteurs-' + new Date().toISOString().slice(0, 10) + '.csv', headers, rows);
+  addressStatusEl.textContent = producers.length + ' centrale(s) exportée(s). Conservez la colonne Identifiant pour permettre la mise à jour au réimport.';
+}
+function exportConsumerCsv() {
+  const consumers = visiblePoints.filter(point => point.imported)
+    .slice().sort((a, b) => a.project.localeCompare(b.project, 'fr', { sensitivity: 'base' }));
+  if (!consumers.length) { importStatusEl.textContent = 'Aucun site consommateur à exporter.'; return; }
+  const headers = ['Identifiant à ne pas modifier', 'Nom', 'Adresse', 'Consommation globale (kWh)', 'Tarif moyen global (€/MWh)',
+    'Consommation pendant les heures de production (kWh)', 'Tarif pendant les heures de production (€/MWh)',
+    'Consommation hors heures de production (kWh)', 'Tarif hors heures de production (€/MWh)', 'Latitude', 'Longitude'];
+  const rows = consumers.map(point => [
+    point.id, point.project, point.address, csvExportNumber(point.consumptionKwh),
+    csvExportNumber(Number.isFinite(point.tariff) ? tariffMwhFromInternal(point.tariff) : null),
+    csvExportNumber(point.consumptionProductionHoursKwh),
+    csvExportNumber(Number.isFinite(point.tariffProductionHours) ? tariffMwhFromInternal(point.tariffProductionHours) : null),
+    csvExportNumber(point.consumptionOffHoursKwh),
+    csvExportNumber(Number.isFinite(point.tariffOffHours) ? tariffMwhFromInternal(point.tariffOffHours) : null),
+    csvExportNumber(point.lat), csvExportNumber(point.lon)
+  ]);
+  downloadCsv('sites-consommateurs-' + new Date().toISOString().slice(0, 10) + '.csv', headers, rows);
+  importStatusEl.textContent = consumers.length + ' site(s) consommateur(s) exporté(s). Conservez la colonne Identifiant pour permettre la mise à jour au réimport.';
+}
+function csvHeaderIndex(headers, aliases) {
+  const normalizedAliases = aliases.map(normHeader);
+  return headers.findIndex(header => normalizedAliases.includes(normHeader(header)));
+}
+function csvIntegerId(value) {
+  const number = parseCsvNumber(value);
+  return Number.isInteger(number) ? number : null;
+}
 function postcodeFromText(value) {
   const match = String(value || '').match(/(?:^|\D)(\d{5})(?:\D|$)/);
   return match ? match[1] : '';
@@ -1635,12 +1706,13 @@ function duplicateKeys() {
 async function importCsvRows(dataRows, idx, rawHeaders = [], tariffUnits = {}) {
   if (!dataRows.length) { importStatusEl.textContent = 'Le fichier ne contient aucune ligne à importer.'; return; }
   importCsvButton.disabled = true;
-  let added = 0, failed = 0, duplicates = 0, lowConfidence = 0, swapped = 0, consumptionValues = 0, invalidConsumption = 0;
+  let added = 0, updated = 0, failed = 0, duplicates = 0, lowConfidence = 0, swapped = 0, consumptionValues = 0, invalidConsumption = 0;
   const seen = duplicateKeys();
   try {
     for (let i = 0; i < dataRows.length; i++) {
       const r = dataRows[i];
       importStatusEl.textContent = 'Import ' + (i + 1) + '/' + dataRows.length + '…';
+      const csvId = idx.id >= 0 ? csvIntegerId(csvCell(r, idx.id)) : null;
       const name = csvCell(r, idx.name), spv = csvCell(r, idx.spv), city = csvCell(r, idx.city), postcode = csvCell(r, idx.postcode);
       const kwcRaw = parseCsvNumber(csvCell(r, idx.kwc));
       const tariffRaw = parseTariffInternal(csvCell(r, idx.tariff), rawHeaders[idx.tariff], tariffUnits[idx.tariff]);
@@ -1656,10 +1728,16 @@ async function importCsvRows(dataRows, idx, rawHeaders = [], tariffUnits = {}) {
       if (postcode && !addressLabel.includes(postcode)) addressLabel = (addressLabel + ' ' + postcode).trim();
       if (city && !canonicalAddress(addressLabel).includes(canonicalAddress(city))) addressLabel = (addressLabel + ' ' + city).trim();
       const addressKey = canonicalAddress(addressLabel);
-      if (addressKey && seen.addresses.has(addressKey)) { duplicates++; continue; }
+      if (!addressKey) { failed++; continue; }
+      let existing = csvId !== null ? visiblePoints.find(point => point.imported && point.id === csvId) : null;
+      if (!existing) existing = visiblePoints.find(point => point.imported && canonicalAddress(point.address) === addressKey && normHeader(point.project) === normHeader(name || addressLabel));
       let coordinates = normalizeCoordinates(csvCell(r, idx.lat), csvCell(r, idx.lon));
-      let citycode = null, matched = addressLabel;
-      if (coordinates) {
+      let citycode = existing?.citycode || null, matched = existing?.matched || addressLabel;
+      const addressChanged = Boolean(existing && canonicalAddress(existing.address) !== addressKey);
+      if (addressChanged) coordinates = null;
+      if (existing && !addressChanged && !coordinates) {
+        coordinates = { lat: existing.lat, lon: existing.lon };
+      } else if (coordinates) {
         if (coordinates.swapped) swapped++;
         citycode = await reverseCitycode(coordinates.lat, coordinates.lon);
         matched = addressLabel || (coordinates.lat + ', ' + coordinates.lon);
@@ -1676,17 +1754,34 @@ async function importCsvRows(dataRows, idx, rawHeaders = [], tariffUnits = {}) {
       }
       if (!coordinates) { failed++; continue; }
       const coordKey = coordinateKey(coordinates.lat, coordinates.lon);
-      if (seen.coordinates.has(coordKey)) { duplicates++; continue; }
-      addImportedPoint({ address: addressLabel || matched, lat: coordinates.lat, lon: coordinates.lon, citycode, project: name || addressLabel || matched, spv: spv || 'Site consommateur', kwc: kwcRaw,
-        consumptionKwh, tariff: tariffRaw, consumptionProductionHoursKwh, tariffProductionHours, consumptionOffHoursKwh, tariffOffHours,
-        matched, city, source: 'import-csv', consumerOrigin: 'csv' });
+      if (!existing && ((addressKey && seen.addresses.has(addressKey)) || seen.coordinates.has(coordKey))) { duplicates++; continue; }
+      if (existing) {
+        existing.address = addressLabel || matched;
+        existing.project = name || addressLabel || matched;
+        if (spv) existing.spv = spv;
+        existing.kwc = Number.isFinite(kwcRaw) ? kwcRaw : existing.kwc;
+        existing.consumptionKwh = consumptionKwh;
+        existing.tariff = tariffRaw;
+        existing.consumptionProductionHoursKwh = consumptionProductionHoursKwh;
+        existing.tariffProductionHours = tariffProductionHours;
+        existing.consumptionOffHoursKwh = consumptionOffHoursKwh;
+        existing.tariffOffHours = tariffOffHours;
+        existing.lat = coordinates.lat; existing.lon = coordinates.lon; existing.citycode = citycode;
+        existing.matched = matched; existing.city = city || existing.city || '';
+        updated++;
+      } else {
+        addImportedPoint({ address: addressLabel || matched, lat: coordinates.lat, lon: coordinates.lon, citycode, project: name || addressLabel || matched, spv: spv || 'Site consommateur', kwc: kwcRaw,
+          consumptionKwh, tariff: tariffRaw, consumptionProductionHoursKwh, tariffProductionHours, consumptionOffHoursKwh, tariffOffHours,
+          matched, city, source: 'import-csv', consumerOrigin: 'csv' });
+        added++;
+      }
       if ([consumptionKwh, consumptionProductionHoursKwh, consumptionOffHoursKwh].some(Number.isFinite)) consumptionValues++;
       if ((consumptionText && consumptionKwh === null) || (consumptionProductionHoursText && consumptionProductionHoursKwh === null) || (consumptionOffHoursText && consumptionOffHoursKwh === null)) invalidConsumption++;
       if (addressKey) seen.addresses.add(addressKey);
       seen.coordinates.add(coordKey);
-      added++;
     }
     document.getElementById('addressCount').textContent = visiblePoints.length;
+    rebuildAddressMarkers();
     renderList();
     updateCircleStatus();
     saveImportedPoints();
@@ -1698,9 +1793,116 @@ async function importCsvRows(dataRows, idx, rawHeaders = [], tariffUnits = {}) {
     if (failed) details.push(failed + ' ligne(s) non localisée(s)');
     if (lowConfidence) details.push(lowConfidence + ' résultat(s) trop incertain(s)');
     if (swapped) details.push(swapped + ' paire(s) latitude/longitude inversée(s) corrigée(s)');
-    importStatusEl.textContent = 'Import terminé : ' + added + ' adresse(s) ajoutée(s)' + (details.length ? ' · ' + details.join(' · ') : '') + '.';
+    importStatusEl.textContent = 'Import terminé : ' + updated + ' site(s) mis à jour · ' + added + ' ajouté(s)' + (details.length ? ' · ' + details.join(' · ') : '') + '.';
   } finally {
     importCsvButton.disabled = false;
+  }
+}
+async function handleProducerCsvFile(file) {
+  importProducerCsvButton.disabled = true;
+  addressStatusEl.textContent = 'Lecture du fichier producteurs…';
+  try {
+    const text = await readCsvText(file);
+    const parsed = parseCSV(text);
+    if (!parsed.rows.length) { addressStatusEl.textContent = 'Fichier CSV vide ou illisible.'; return; }
+    const headers = parsed.rows[0];
+    const columns = {
+      id: csvHeaderIndex(headers, ['Identifiant à ne pas modifier', 'Identifiant', 'ID']),
+      name: csvHeaderIndex(headers, ['Nom', 'Nom du projet', 'Projet']),
+      address: csvHeaderIndex(headers, ['Adresse', 'Adresse complète']),
+      spv: csvHeaderIndex(headers, ['Société / SPV', 'SPV', 'Société']),
+      annualKwh: csvHeaderIndex(headers, ['Production annuelle (kWh)', 'Production annuelle', 'Production kWh']),
+      tariff: csvHeaderIndex(headers, ['Tarif (€/MWh)', 'Tarif', 'Tarif €/MWh']),
+      accStatus: csvHeaderIndex(headers, ['ACC', 'Déjà dans une boucle ACC']),
+      accAllocatedKwh: csvHeaderIndex(headers, ['Production affectée ACC (kWh)', 'Production affectée à la boucle ACC']),
+      lat: csvHeaderIndex(headers, ['Latitude', 'Lat']),
+      lon: csvHeaderIndex(headers, ['Longitude', 'Lon', 'Lng'])
+    };
+    if (columns.name < 0 || columns.address < 0) {
+      addressStatusEl.textContent = 'Réimport impossible : les colonnes Nom et Adresse sont obligatoires. Utilisez de préférence un CSV exporté depuis la carte.';
+      return;
+    }
+    let updated = 0, added = 0, failed = 0;
+    const rows = parsed.rows.slice(1).filter(row => row.some(cell => String(cell || '').trim()));
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      addressStatusEl.textContent = 'Réimport producteurs ' + (index + 1) + '/' + rows.length + '…';
+      const id = columns.id >= 0 ? csvIntegerId(csvCell(row, columns.id)) : null;
+      const project = csvCell(row, columns.name);
+      const address = csvCell(row, columns.address);
+      const spv = columns.spv >= 0 ? csvCell(row, columns.spv) : '';
+      if (!project || !address) { failed++; continue; }
+      const annualText = columns.annualKwh >= 0 ? csvCell(row, columns.annualKwh) : '';
+      const tariffText = columns.tariff >= 0 ? csvCell(row, columns.tariff) : '';
+      const allocatedText = columns.accAllocatedKwh >= 0 ? csvCell(row, columns.accAllocatedKwh) : '';
+      const annualKwh = annualText ? parseCsvNumber(annualText) : null;
+      const tariffMwh = tariffText ? parseCsvNumber(tariffText) : null;
+      const allocatedKwh = allocatedText ? parseCsvNumber(allocatedText) : null;
+      if ((annualText && (!Number.isFinite(annualKwh) || annualKwh < 0)) ||
+          (tariffText && (!Number.isFinite(tariffMwh) || tariffMwh < 0)) ||
+          (allocatedText && (!Number.isFinite(allocatedKwh) || allocatedKwh < 0))) { failed++; continue; }
+      const accRaw = columns.accStatus >= 0 ? normHeader(csvCell(row, columns.accStatus)) : '';
+      const accStatus = ['oui', 'yes', '1', 'true'].includes(accRaw) ? 'yes' : ['non', 'no', '0', 'false'].includes(accRaw) ? 'no' : null;
+      if (accStatus === 'yes' && (!Number.isFinite(annualKwh) || !Number.isFinite(allocatedKwh) || allocatedKwh > annualKwh)) { failed++; continue; }
+
+      let point = id !== null ? visiblePoints.find(item => item.id === id && !item.imported) : null;
+      if (!point) point = visiblePoints.find(item => !item.imported && canonicalAddress(item.address) === canonicalAddress(address) && normHeader(item.project) === normHeader(project));
+      if (!point && id !== null && id > 0 && projectInfoById[id]) {
+        const base = points.find(item => item.id === id);
+        if (base && !visiblePoints.some(item => item.id === id)) {
+          point = { ...base, ...projectInfoById[id], annualKwh: window.pipelineAnnualKwhById?.[id] ?? null };
+          hiddenAddressIds.delete(id);
+          visiblePoints.push(point);
+        }
+      }
+
+      let coordinates = normalizeCoordinates(csvCell(row, columns.lat), csvCell(row, columns.lon));
+      let found = null;
+      const addressChanged = Boolean(point && canonicalAddress(point.address) !== canonicalAddress(address));
+      if (!point || addressChanged) {
+        try { found = await geocodeAddress(address); } catch (error) { found = null; }
+        if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
+          if (!point && coordinates) found = { lat: coordinates.lat, lon: coordinates.lon, label: address, citycode: null, city: '' };
+          else { failed++; continue; }
+        }
+        await sleep(150);
+      }
+
+      if (!point) {
+        const reusableId = id !== null && id < 0 && !visiblePoints.some(item => item.id === id) ? id : nextSavedId--;
+        nextSavedId = Math.min(nextSavedId, reusableId - 1);
+        point = { id: reusableId, manual: true, source: 'ajout-manuel', color: '#d83b35' };
+        visiblePoints.push(point);
+        added++;
+      } else {
+        updated++;
+      }
+      point.address = address;
+      point.project = project;
+      point.spv = spv || point.spv || 'Ajout manuel';
+      point.annualKwh = Number.isFinite(annualKwh) ? annualKwh : null;
+      point.tariff = Number.isFinite(tariffMwh) ? tariffInternalFromMwh(tariffMwh) : null;
+      point.accStatus = accStatus;
+      point.accAllocatedKwh = accStatus === 'yes' ? allocatedKwh : null;
+      if (found) {
+        point.lat = found.lat; point.lon = found.lon; point.citycode = found.citycode || null;
+        point.matched = found.label || address; point.city = found.city || '';
+      } else if (coordinates) {
+        point.lat = coordinates.lat; point.lon = coordinates.lon;
+      }
+      if (!point.manual) editedCentralIds.add(point.id);
+    }
+    saveSavedAddressChanges();
+    rebuildAddressMarkers();
+    document.getElementById('addressCount').textContent = visiblePoints.length;
+    updateCircleStatus(); renderList(); renderManagementList();
+    const active = visiblePoints.find(point => point.id === activeId);
+    if (active && !active.imported && map) placeCircle(active.lat, active.lon, regRadiusMeters(active.citycode), active.project + ' — ' + regLabelForCitycode(active.citycode));
+    addressStatusEl.textContent = 'Réimport terminé : ' + updated + ' centrale(s) mise(s) à jour · ' + added + ' ajoutée(s)' + (failed ? ' · ' + failed + ' ligne(s) ignorée(s)' : '') + '. Aucun doublon n’a été créé pour les identifiants reconnus.';
+  } catch (error) {
+    addressStatusEl.textContent = 'Impossible de réimporter ce CSV producteurs. Utilisez un fichier exporté depuis la carte et vérifiez son format.';
+  } finally {
+    importProducerCsvButton.disabled = false;
   }
 }
 async function handleCsvFile(file) {
@@ -1738,6 +1940,13 @@ addAddressButton.addEventListener('click', () => {
   addressDialog.hidden = false;
   addressForm.querySelector('[name="address"]').focus();
 });
+exportProducerCsvButton.addEventListener('click', exportProducerCsv);
+importProducerCsvButton.addEventListener('click', () => producerCsvFileInput.click());
+producerCsvFileInput.addEventListener('change', () => {
+  const file = producerCsvFileInput.files && producerCsvFileInput.files[0];
+  producerCsvFileInput.value = '';
+  if (file) handleProducerCsvFile(file);
+});
 addressCancelButton.addEventListener('click', () => {
   if (addressSaveButton.disabled) return;
   addressDialog.hidden = true;
@@ -1769,6 +1978,7 @@ search.addEventListener('keydown', event => {
 externalSearchButton.addEventListener('click', searchExternalAddress);
 clearExternalSearchButton.addEventListener('click', () => clearExternalSearch());
 importCsvButton.addEventListener('click', () => csvFileInput.click());
+exportConsumerCsvButton.addEventListener('click', exportConsumerCsv);
 csvFileInput.addEventListener('change', () => {
   const file = csvFileInput.files && csvFileInput.files[0];
   csvFileInput.value = '';
