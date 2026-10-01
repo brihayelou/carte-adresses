@@ -2182,7 +2182,7 @@ if (!window.L) {
 // Ouvre la carte depuis la présentation : ?site=<adresse précise>&nom=<entreprise>
 // L'adresse est localisée comme dans « Ajouter un site consommateur », le site est créé
 // (s'il n'existe pas déjà), puis la carte se centre dessus et affiche le cercle réglementaire.
-window.addEventListener('load', () => setTimeout(async function openFromLink() {
+setTimeout(async function openFromLink() {
   const q = new URLSearchParams(location.search);
   const address = (q.get('site') || '').trim();
   if (!address) return;
@@ -2191,6 +2191,7 @@ window.addEventListener('load', () => setTimeout(async function openFromLink() {
     const found = await geocodeAddress(address);
     if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
       importStatusEl.textContent = 'Adresse introuvable ou trop imprécise : ' + address;
+      alert('Adresse introuvable ou trop imprécise : ' + address + '\nAjoutez le numéro, le code postal et la ville.');
       return;
     }
     let point = visiblePoints.find(p => p.imported && Math.abs(p.lat - found.lat) < 1e-6 && Math.abs(p.lon - found.lon) < 1e-6);
@@ -2210,8 +2211,9 @@ window.addEventListener('load', () => setTimeout(async function openFromLink() {
     updateCircleStatus();
   } catch (error) {
     importStatusEl.textContent = 'Impossible de placer l’adresse. Vérifiez la connexion.';
+    alert('Impossible de placer l’adresse : ' + address + '\n' + error);
   }
-}, 400));
+}, 800);
 </script>
 </body>
 </html>
