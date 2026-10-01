@@ -2177,6 +2177,41 @@ if (!window.L) {
   }, 150);
   window.addEventListener('resize', () => map.invalidateSize());
 }
+
+// À coller dans index.html de carte-adresses, juste avant la dernière balise </script>.
+// Ouvre la carte depuis la présentation : ?site=<adresse précise>&nom=<entreprise>
+// L'adresse est localisée comme dans « Ajouter un site consommateur », le site est créé
+// (s'il n'existe pas déjà), puis la carte se centre dessus et affiche le cercle réglementaire.
+window.addEventListener('load', () => setTimeout(async function openFromLink() {
+  const q = new URLSearchParams(location.search);
+  const address = (q.get('site') || '').trim();
+  if (!address) return;
+  const project = (q.get('nom') || '').trim() || address;
+  try {
+    const found = await geocodeAddress(address);
+    if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
+      importStatusEl.textContent = 'Adresse introuvable ou trop imprécise : ' + address;
+      return;
+    }
+    let point = visiblePoints.find(p => p.imported && Math.abs(p.lat - found.lat) < 1e-6 && Math.abs(p.lon - found.lon) < 1e-6);
+    if (!point) {
+      addImportedPoint({ address, project, spv: 'Site consommateur',
+        lat: found.lat, lon: found.lon, citycode: found.citycode || null, matched: found.label || address,
+        city: found.city || '', source: 'consumer-manual', consumerOrigin: 'manual' });
+      saveImportedPoints();
+      rebuildAddressMarkers();
+      document.getElementById('addressCount').textContent = visiblePoints.length;
+      renderList(); renderManagementList();
+      point = visiblePoints[visiblePoints.length - 1];
+      importStatusEl.textContent = 'Site consommateur ajouté : ' + project + '.';
+    }
+    history.replaceState(null, '', location.pathname);
+    activate(point.id, true);
+    updateCircleStatus();
+  } catch (error) {
+    importStatusEl.textContent = 'Impossible de placer l’adresse. Vérifiez la connexion.';
+  }
+}, 400));
 </script>
 </body>
 </html>
