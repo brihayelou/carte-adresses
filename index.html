@@ -1757,6 +1757,63 @@ async function geocodeAddress(query) {
     citycode: properties.citycode, label: properties.label, city: properties.city, postcode: properties.postcode, score
   };
 }
+function clearIncomingConsumerParams() {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('site');
+    url.searchParams.delete('nom');
+    window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch (error) { /* URL non modifiable : le contrôle des doublons reste actif */ }
+}
+async function handleIncomingConsumerFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const address = String(params.get('site') || '').trim();
+  if (!address) return;
+  const providedName = String(params.get('nom') || '').trim();
+  const project = providedName || address;
+  importStatusEl.textContent = 'Localisation du site consommateur transmis par le formulaire…';
+  try {
+    const existing = visiblePoints.find(point => point.imported &&
+      canonicalAddress(point.address) === canonicalAddress(address) &&
+      normHeader(point.project) === normHeader(project));
+    if (existing) {
+      clearIncomingConsumerParams();
+      activate(existing.id, true);
+      importStatusEl.textContent = 'Site consommateur déjà présent : ' + existing.project + '. Il a été sélectionné sur la carte.';
+      return;
+    }
+    const found = await geocodeAddress(address);
+    if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
+      search.value = address;
+      importStatusEl.textContent = found && found.reason === 'confidence'
+        ? 'L’adresse transmise est trop imprécise pour être ajoutée automatiquement. Elle a été placée dans la recherche pour vérification.'
+        : 'L’adresse transmise par le formulaire est introuvable. Elle a été placée dans la recherche pour vérification.';
+      return;
+    }
+    const point = addImportedPoint({
+      address,
+      project,
+      spv: 'Site consommateur',
+      lat: found.lat,
+      lon: found.lon,
+      citycode: found.citycode || null,
+      matched: found.label || address,
+      city: found.city || '',
+      source: 'presentation-form',
+      consumerOrigin: 'form'
+    });
+    saveImportedPoints();
+    rebuildAddressMarkers();
+    document.getElementById('addressCount').textContent = visiblePoints.length;
+    renderManagementList();
+    clearIncomingConsumerParams();
+    activate(point.id, true);
+    importStatusEl.textContent = 'Site consommateur ajouté depuis le formulaire : ' + project + '.';
+  } catch (error) {
+    search.value = address;
+    importStatusEl.textContent = 'Impossible d’ajouter automatiquement le site consommateur. Vérifiez la connexion puis lancez la recherche de l’adresse.';
+  }
+}
 async function reverseCitycode(lat, lon) {
   try {
     const data = await fetchJsonWithRetry('https://data.geopf.fr/geocodage/reverse?lon=' + lon + '&lat=' + lat + '&limit=1');
@@ -2171,49 +2228,14 @@ if (!window.L) {
   buildLayers();
   loadImportedPoints();
   renderList();
-  setTimeout(() => {
-    map.invalidateSize();
-    if (!circleContext && visiblePoints.length) map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
-  }, 150);
+  handleIncomingConsumerFromUrl().finally(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+      if (!circleContext && visiblePoints.length) map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
+    }, 150);
+  });
   window.addEventListener('resize', () => map.invalidateSize());
 }
-
-// À coller dans index.html de carte-adresses, juste avant la dernière balise </script>.
-// Ouvre la carte depuis la présentation : ?site=<adresse précise>&nom=<entreprise>
-// L'adresse est localisée comme dans « Ajouter un site consommateur », le site est créé
-// (s'il n'existe pas déjà), puis la carte se centre dessus et affiche le cercle réglementaire.
-setTimeout(async function openFromLink() {
-  const q = new URLSearchParams(location.search);
-  const address = (q.get('site') || '').trim();
-  if (!address) return;
-  const project = (q.get('nom') || '').trim() || address;
-  try {
-    const found = await geocodeAddress(address);
-    if (!found || found.rejected || !Number.isFinite(found.lat) || !Number.isFinite(found.lon)) {
-      importStatusEl.textContent = 'Adresse introuvable ou trop imprécise : ' + address;
-      alert('Adresse introuvable ou trop imprécise : ' + address + '\nAjoutez le numéro, le code postal et la ville.');
-      return;
-    }
-    let point = visiblePoints.find(p => p.imported && Math.abs(p.lat - found.lat) < 1e-6 && Math.abs(p.lon - found.lon) < 1e-6);
-    if (!point) {
-      addImportedPoint({ address, project, spv: 'Site consommateur',
-        lat: found.lat, lon: found.lon, citycode: found.citycode || null, matched: found.label || address,
-        city: found.city || '', source: 'consumer-manual', consumerOrigin: 'manual' });
-      saveImportedPoints();
-      rebuildAddressMarkers();
-      document.getElementById('addressCount').textContent = visiblePoints.length;
-      renderList(); renderManagementList();
-      point = visiblePoints[visiblePoints.length - 1];
-      importStatusEl.textContent = 'Site consommateur ajouté : ' + project + '.';
-    }
-    history.replaceState(null, '', location.pathname);
-    activate(point.id, true);
-    updateCircleStatus();
-  } catch (error) {
-    importStatusEl.textContent = 'Impossible de placer l’adresse. Vérifiez la connexion.';
-    alert('Impossible de placer l’adresse : ' + address + '\n' + error);
-  }
-}, 800);
 </script>
 </body>
 </html>
