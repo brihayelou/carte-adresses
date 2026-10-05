@@ -1762,6 +1762,9 @@ function clearIncomingConsumerParams() {
     const url = new URL(window.location.href);
     url.searchParams.delete('site');
     url.searchParams.delete('nom');
+    url.searchParams.delete('conso_mwh');
+    url.searchParams.delete('tarif');
+    url.searchParams.delete('tarif_unite');
     window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
   } catch (error) { /* URL non modifiable : le contrôle des doublons reste actif */ }
 }
@@ -1771,15 +1774,30 @@ async function handleIncomingConsumerFromUrl() {
   if (!address) return;
   const providedName = String(params.get('nom') || '').trim();
   const project = providedName || address;
+  const consumptionMwhText = String(params.get('conso_mwh') || '').trim();
+  const tariffText = String(params.get('tarif') || '').trim();
+  const tariffUnit = String(params.get('tarif_unite') || 'mwh').trim().toLowerCase();
+  const consumptionMwh = consumptionMwhText ? parseCsvNumber(consumptionMwhText) : null;
+  const tariffInput = tariffText ? parseCsvNumber(tariffText) : null;
+  const consumptionKwh = Number.isFinite(consumptionMwh) && consumptionMwh >= 0 ? consumptionMwh * 1000 : null;
+  const tariffMwh = Number.isFinite(tariffInput) && tariffInput >= 0
+    ? (tariffUnit === 'kwh' ? tariffInput * 1000 : tariffInput)
+    : null;
+  const tariff = Number.isFinite(tariffMwh) ? tariffInternalFromMwh(tariffMwh) : null;
   importStatusEl.textContent = 'Localisation du site consommateur transmis par le formulaire…';
   try {
     const existing = visiblePoints.find(point => point.imported &&
       canonicalAddress(point.address) === canonicalAddress(address) &&
       normHeader(point.project) === normHeader(project));
     if (existing) {
+      if (Number.isFinite(consumptionKwh)) existing.consumptionKwh = consumptionKwh;
+      if (Number.isFinite(tariff)) existing.tariff = tariff;
+      if (Number.isFinite(consumptionKwh) || Number.isFinite(tariff)) saveImportedPoints();
+      rebuildAddressMarkers();
+      renderManagementList();
       clearIncomingConsumerParams();
       activate(existing.id, true);
-      importStatusEl.textContent = 'Site consommateur déjà présent : ' + existing.project + '. Il a été sélectionné sur la carte.';
+      importStatusEl.textContent = 'Site consommateur déjà présent : ' + existing.project + '. Ses informations disponibles ont été mises à jour.';
       return;
     }
     const found = await geocodeAddress(address);
@@ -1800,7 +1818,9 @@ async function handleIncomingConsumerFromUrl() {
       matched: found.label || address,
       city: found.city || '',
       source: 'presentation-form',
-      consumerOrigin: 'form'
+      consumerOrigin: 'form',
+      consumptionKwh,
+      tariff
     });
     saveImportedPoints();
     rebuildAddressMarkers();
