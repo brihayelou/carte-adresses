@@ -2,6 +2,32 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<script>
+/* Version partagée validée le 5 novembre 2026. Les modifications ultérieures restent locales. */
+(() => {
+  'use strict';
+  const revision='equisolar-shared-snapshot-2026-11-05-v1';
+  const defaults={"equisolar-acc-loops-v1":"[{\"id\":\"loop-b0d00fbb-4bb1-46dd-92bf-3b52f22e9294\",\"name\":\"BACC 1 DU CHEVALET\",\"pmo\":\"BACC DU CHEVALET\",\"date\":\"2026-10-01\",\"km\":10,\"basis\":\"recorded\",\"sis\":\"study\",\"notes\":\"\",\"color\":\"#007c83\",\"members\":[-1,108,107],\"centres\":[]}]","carte-adresses-import-csv-v1":"[{\"id\":107,\"address\":\"200 RUE LAMENDIN 59286 ROOST-WARENDIN\",\"lat\":50.409779,\"lon\":3.104771,\"citycode\":\"59509\",\"project\":\"SCI LAMENDIN\",\"spv\":\"Site consommateur\",\"kwc\":null,\"consumptionKwh\":12436,\"tariff\":13.180000000000001,\"consumptionProductionHoursKwh\":null,\"tariffProductionHours\":null,\"consumptionOffHoursKwh\":null,\"tariffOffHours\":null,\"matched\":\"Rue Lamendin 59286 Roost-Warendin\",\"city\":\"Roost-Warendin\",\"source\":\"consumer-manual\",\"consumerOrigin\":\"manual\"},{\"id\":108,\"address\":\"283 RUE DES MOLETTES 59286 ROOST-Warendin\",\"lat\":50.411016,\"lon\":3.105567,\"citycode\":\"59509\",\"project\":\"SCI DU CHEVALET\",\"spv\":\"Site consommateur\",\"kwc\":null,\"consumptionKwh\":30911,\"tariff\":13.180000000000001,\"consumptionProductionHoursKwh\":null,\"tariffProductionHours\":null,\"consumptionOffHoursKwh\":null,\"tariffOffHours\":null,\"matched\":\"283 Rue des Molettes 59286 Roost-Warendin\",\"city\":\"Roost-Warendin\",\"source\":\"consumer-manual\",\"consumerOrigin\":\"manual\"}]","carte-adresses-manual-v1":"{\"added\":[{\"id\":-1,\"address\":\"RUE DES MOLETTES 59286 ROOST-Warendin\",\"project\":\"VBYS CHEVALET\",\"spv\":\"SNC VBYS\",\"annualKwh\":195059,\"tariff\":12.08,\"accStatus\":\"yes\",\"accAllocatedKwh\":195059,\"lat\":50.411073,\"lon\":3.106374,\"citycode\":\"59509\",\"matched\":\"Rue des Molettes 59286 Roost-Warendin\",\"city\":\"Roost-Warendin\"}],\"edited\":[],\"hidden\":[]}","equisolar-producer-activity-v1":"{\"-1\":true}","equisolar-producer-tariffs-plus-20-2026-10-22":"done"};
+  let previous=null;
+  try {
+    if(localStorage.getItem(revision)==='done')return;
+    previous={};
+    for(const key of Object.keys(defaults))previous[key]=localStorage.getItem(key);
+    // Sauvegarder avant toute modification, y compris si un navigateur a déjà servi.
+    const backup=revision+'-backup';
+    if(localStorage.getItem(backup)===null)localStorage.setItem(backup,JSON.stringify(previous));
+    for(const [key,value] of Object.entries(defaults))localStorage.setItem(key,value);
+    localStorage.setItem(revision,'done');
+  } catch(error) {
+    // En cas de quota ou de stockage bloqué, restaurer l’état précédent.
+    if(previous)for(const [key,value] of Object.entries(previous)){
+      try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch(restoreError){}
+    }
+    console.error('Initialisation de la carte partagée impossible.',error);
+    alert('Les données partagées n’ont pas pu être chargées. Autorisez le stockage du site dans ce navigateur puis rechargez la page. Vos anciennes données n’ont pas été volontairement supprimées.');
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Carte des adresses - rayons réglementaires</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
