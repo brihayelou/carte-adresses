@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <script>
+// Les données géographiques nécessitent HTTP ; cette branche n’est jamais exécutée sur GitHub Pages.
+if (location.protocol === 'file:') {
+  location.replace('http://127.0.0.1:8951/index.html' + location.search + location.hash);
+}
+</script>
+<script>
 /* Version partagée validée le 5 novembre 2026. Les modifications ultérieures restent locales. */
 (() => {
   'use strict';
@@ -465,7 +471,7 @@ html,body{height:100%;overflow:hidden}main{display:block!important;width:100%;he
       <button class="central-list-toggle" id="centralListToggle" type="button" aria-label="Ouvrir la gestion des sites" aria-expanded="false" aria-controls="managementPanel" title="Ouvrir la gestion des sites">⋯</button>
       <p class="summary">Sélectionne un point ou cherche une adresse pour afficher le cercle et les sites proches. Le bouton « ⋯ » ouvre la liste complète des centrales et leur modification.</p>
       <div class="toolbar">
-        <button id="toggleCisBtn" type="button" aria-pressed="true" disabled>Masquer les centres</button>
+        <button id="toggleCisBtn" type="button" aria-pressed="false" disabled>Afficher les centres</button>
       </div>
       <div class="import-status" id="importStatus" aria-live="polite"></div>
       <div class="address-status" id="addressStatus" aria-live="polite"></div>
@@ -710,7 +716,7 @@ const hiddenAddressIds = new Set();
 const editedCentralIds = new Set();
 let map, zoneLayer, circleGroup, markerGroup, cisLayer;
 let cisSites = [];
-let cisVisible = true;
+let cisVisible = false;
 let activeId = null;
 let managementTab = 'producers';
 let editingCentralId = null;
@@ -889,7 +895,7 @@ async function loadCisSites() {
     const data = await response.json();
     if (!data || !Array.isArray(data.sites)) throw new Error('Données de centres invalides');
     cisSites = data.sites.filter(site => Number.isFinite(site.lat) && Number.isFinite(site.lon));
-    cisStatusEl.textContent = cisSites.length.toLocaleString('fr-FR') + ' centres d’incendie et de secours affichés.';
+    cisStatusEl.textContent = cisSites.length.toLocaleString('fr-FR') + ' centres d’incendie et de secours ' + (cisVisible ? 'affichés.' : 'masqués.');
     toggleCisButton.disabled = false;
     map.attributionControl.addAttribution('<a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener noreferrer">IGN BD TOPO</a>');
     renderCisSites();
@@ -2588,7 +2594,7 @@ if (!window.L) {
   map.getPane('cisPane').style.zIndex = 430;
   loadZoneLayer();
   circleGroup = L.layerGroup().addTo(map);
-  cisLayer = L.layerGroup().addTo(map);
+  cisLayer = L.layerGroup();
   map.on('moveend zoomend', renderCisSites);
   loadCisSites();
   markerGroup = L.layerGroup().addTo(map);
@@ -2598,7 +2604,11 @@ if (!window.L) {
   handleIncomingConsumerFromUrl().finally(() => {
     setTimeout(() => {
       map.invalidateSize();
-      if (!circleContext && visiblePoints.length) map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
+      if (!circleContext) {
+        const loopBounds=window.AccLoops?.startupBounds();
+        if(loopBounds)map.fitBounds(loopBounds.pad(.12),{maxZoom:12,padding:[45,65]});
+        else if(visiblePoints.length)map.fitBounds(L.latLngBounds(visiblePoints.map(point => [point.lat, point.lon])).pad(0.15));
+      }
     }, 150);
   });
   window.addEventListener('resize', () => map.invalidateSize());
@@ -2705,8 +2715,8 @@ if (!window.L) {
 })();
 </script>
 <script src="demo-zone-geometry.js?v=2"></script>
-<script src="acc-zone-assistee.js?v=2026110310"></script>
-<script src="acc-loops.js?v=2026110302"></script>
+<script src="acc-zone-assistee.js?v=2026111801"></script>
+<script src="acc-loops.js?v=2026111801"></script>
 </body>
 </html>
 

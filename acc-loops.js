@@ -9,11 +9,13 @@
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || '[]');
     if (Array.isArray(saved)) loops = saved.filter(x => x && typeof x.id === 'string' && typeof x.name === 'string')
-      .map(x => ({...x, members: Array.isArray(x.members) ? x.members : [], centres: Array.isArray(x.centres) ? x.centres : [], km: [2,10,20].includes(x.km) ? x.km : 2}));
+      .map(x => ({...x, active:x.active!==false, members: Array.isArray(x.members) ? x.members : [], centres: Array.isArray(x.centres) ? x.centres : [], km: [2,10,20].includes(x.km) ? x.km : 2}));
   } catch (error) { storageProblem = 'Les boucles enregistrées ne peuvent pas être lues dans ce navigateur.'; }
   let selectedId = null, picking = null, scenarioCentre = null, candidate = null;
   let layer = null, candidateLayer = null, lastReport = null, assisted = null;
   let candidates = [], zoneMessage = '';
+  let loopsVisible=true;
+  const overviewZones=new Map();
   const candidateKey = p => p.id !== undefined ? 'id:'+p.id : 'll:'+p.lat+','+p.lon;
   const testedSites = () => actors().concat(candidates);
   function toggleCandidate(p){
@@ -46,7 +48,7 @@
   function persist(change) {
     const before = JSON.stringify(loops);
     change();
-    try { localStorage.setItem(KEY, JSON.stringify(loops)); return true; }
+    try { localStorage.setItem(KEY, JSON.stringify(loops)); renderOverview(); return true; }
     catch (error) {
       loops = JSON.parse(before);
       alert('Enregistrement impossible dans ce navigateur. La modification n’a pas été conservée.');
@@ -141,6 +143,7 @@
     <h2 id="accLoopTitle">Créer une boucle d’ACC</h2>
     <section class="acc-param-actors" aria-label="Acteurs et test de distance" data-param-actors></section>
     <label>Dénomination *<input name="name" required maxlength="150"></label>
+    <label>Affichage automatique de la boucle<select name="active"><option value="yes">Active — visible à l’ouverture</option><option value="no">Inactive — conservée, mais masquée à l’ouverture</option></select></label>
     <label>PMO<input name="pmo" maxlength="200"></label>
     <label>Date de création<input name="date" type="date"></label>
     <label>Distance maximale entre deux participants<select name="km"><option value="2">2 km</option><option value="10">10 km</option><option value="20">20 km</option></select></label>
@@ -166,6 +169,7 @@
   function editLoop(id=null) {
     editingId=id; const x=loops.find(x=>x.id===id);
     form.reset();
+    form.elements.namedItem('active').value=x?.active===false?'no':'yes';
     for(const name of ['name','pmo','date','km','basis','sis','notes','color']) if(x && x[name] !== undefined)form.elements.namedItem(name).value=x[name];
     actorDraft=cloneActorDraft(x);paramCandidateId='';paramTestedId=null;
     cancelNewActorRequest();paramAddOpen=false;paramAddMode='existing';paramNotice='';newActorValues={};newActorKind='consumer';newActorError='';
@@ -176,14 +180,14 @@
   form.onsubmit=e=>{
     e.preventDefault();if(newActorBusy){form.querySelector('[data-param-error]').textContent='Attendez la fin de la localisation du site.';return;}const data=new FormData(form); const name=String(data.get('name')).trim();if(!name)return;
     const old=loops.find(x=>x.id===editingId);
-    const x={...old,id:old?.id||'loop-'+crypto.randomUUID(),name,pmo:String(data.get('pmo')).trim(),date:String(data.get('date')),km:Number(data.get('km')),basis:String(data.get('basis')),sis:String(data.get('sis')),notes:String(data.get('notes')).trim(),color:String(data.get('color')),...cloneActorDraft(actorDraft)};
+    const x={...old,id:old?.id||'loop-'+crypto.randomUUID(),name,active:data.get('active')!=='no',pmo:String(data.get('pmo')).trim(),date:String(data.get('date')),km:Number(data.get('km')),basis:String(data.get('basis')),sis:String(data.get('sis')),notes:String(data.get('notes')).trim(),color:String(data.get('color')),...cloneActorDraft(actorDraft)};
     const additions=x.members.filter(id=>!old?.members.includes(id));
     if(additions.some(id=>{const p=visiblePoints.find(p=>p.id===id),assigned=membership(id);return !p||isProducerMarkerHidden(p)||(assigned&&assigned.id!==editingId);})){
       form.querySelector('[data-param-error]').textContent='Un site ajouté est indisponible, inactif ou déjà affecté à une autre boucle. Vérifiez la liste des acteurs.';return;
     }
     if(additions.length&&!actorCheck(x).ok){form.querySelector('[data-param-error]').textContent='Ajout non enregistré : les distances dépassent la limite. Retirez le site incompatible ou corrigez le cadre de distance.';return;}
     if(!persist(()=>{if(old)loops[loops.indexOf(old)]=x;else loops.push(x);}))return;
-    modal.hidden=true;render();refresh();
+    modal.hidden=true;if(selectedId===x.id&&x.active===false)closeStudy();render();refresh();
   };
   function draftLoop(){return {id:editingId,km:Number(form.elements.namedItem('km').value),...actorDraft};}
   function reportText(report){
@@ -320,7 +324,7 @@
     managementList.innerHTML=`<div class="acc-loop-list"><div class="acc-loop-buttons"><button type="button" class="primary" data-create>Créer une boucle</button></div>
       <p class="acc-note">Boucles enregistrées dans ce navigateur. Affectez les sites depuis leurs fiches ou depuis la liste des acteurs de la boucle.</p>
       ${storageProblem?`<p class="acc-fail">${esc(storageProblem)}</p>`:''}
-      ${loops.length?loops.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(x=>`<article class="acc-loop-card" style="border-left:4px solid ${esc(x.color)}"><h3>${esc(x.name)}</h3><p>${esc(x.pmo||'PMO non renseignée')} · ${allMembers(x).length} acteur(s) · ${x.km} km</p><p>${x.date?'Créée le '+esc(x.date):'Date non renseignée'} · SIS : ${x.sis==='confirmed'?'participation confirmée':x.sis==='none'?'non envisagé':'à étudier'}</p><div class="acc-loop-buttons"><button type="button" data-show="${esc(x.id)}" class="primary">Voir et tester</button><button type="button" data-edit="${esc(x.id)}">Paramètres</button><button type="button" data-delete="${esc(x.id)}">Supprimer</button></div></article>`).join(''):'<p>Aucune boucle enregistrée. Créez la première avec vos données.</p>'}</div>`;
+      ${loops.length?loops.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(x=>`<article class="acc-loop-card" style="border-left:4px solid ${esc(x.color)}"><h3>${esc(x.name)}</h3><p>${x.active===false?'Inactive — masquée à l’ouverture':'Active — visible à l’ouverture'}</p><p>${esc(x.pmo||'PMO non renseignée')} · ${allMembers(x).length} acteur(s) · ${x.km} km</p><p>${x.date?'Créée le '+esc(x.date):'Date non renseignée'} · SIS : ${x.sis==='confirmed'?'participation confirmée':x.sis==='none'?'non envisagé':'à étudier'}</p><div class="acc-loop-buttons"><button type="button" data-show="${esc(x.id)}" class="primary">Voir et tester</button><button type="button" data-edit="${esc(x.id)}">Paramètres</button><button type="button" data-delete="${esc(x.id)}">Supprimer</button></div></article>`).join(''):'<p>Aucune boucle enregistrée. Créez la première avec vos données.</p>'}</div>`;
     managementList.querySelector('[data-create]').onclick=()=>editLoop();
     managementList.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>show(b.dataset.show));
     managementList.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editLoop(b.dataset.edit));
@@ -331,10 +335,13 @@
     });
   }
   function show(id){
+    if(!loops.some(x=>x.id===id))return;
+    loopsVisible=true;
     selectedId=id;picking=null;scenarioCentre=null;candidate=null;lastReport=null;candidates=[];zoneMessage='';assisted?.clear();
+    renderOverview();
     setManagementOpen(false);hideCircle();draw(true);renderPanel();
   }
-  function closeStudy(){selectedId=null;picking=null;scenarioCentre=null;candidate=null;candidates=[];panel.hidden=true;assisted?.clear();layer?.clearLayers();candidateLayer?.clearLayers();}
+  function closeStudy(){selectedId=null;picking=null;scenarioCentre=null;candidate=null;candidates=[];panel.hidden=true;assisted?.clear();layer?.clearLayers();candidateLayer?.clearLayers();renderOverview();}
   function draw(fit=false){
     if(!map)return;
     if(!layer)layer=L.layerGroup().addTo(map);
@@ -441,7 +448,7 @@
       });
     });
   }
-  function refresh(){if(current()){
+  function refresh(){renderOverview();if(current()){
     candidates=candidates.map(p=>p.id===undefined?p:visiblePoints.find(x=>x.id===p.id)).filter(p=>p&&!actors().some(x=>candidateKey(x)===candidateKey(p))&&!isProducerMarkerHidden(p));
     draw();renderPanel();
   }}
@@ -486,6 +493,49 @@
     candidates=candidates.filter(p=>!removed.has(p.id));
     refresh();
   }
-  window.AccLoops={syncTab,render,refresh,pickSite,pickCentre,pickAddress,fillSiteForm,saveSiteForm,forgetSites,closeStudy,show};
+  // Les zones automatiques sont consultables, mais ne capturent pas le déplacement de la carte.
+  const visibilityButton=document.createElement('button');
+  visibilityButton.id='toggleAccLoopsBtn';visibilityButton.type='button';visibilityButton.className='map-round-button';
+  visibilityButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5a8 8 0 1 1-3 6"/><path d="M3 5h4v4"/><path d="m13 7-3 5h4l-3 5"/></svg>';
+  visibilityButton.addEventListener('click',()=>{
+    loopsVisible=!loopsVisible;
+    if(!loopsVisible)closeStudy();else renderOverview();
+  });
+  document.querySelector('.map-actions')?.prepend(visibilityButton);
+  function renderOverview(){
+    if(!map)return;
+    const liveIds=new Set(loops.map(x=>x.id));
+    for(const [id,zone] of overviewZones)if(!liveIds.has(id)){zone.destroy();overviewZones.delete(id);}
+    for(const loop of loops){
+      let zone=overviewZones.get(loop.id);
+      if(!loopsVisible||loop.active===false||loop.id===selectedId){zone?.clear();continue;}
+      const sites=allMembers(loop).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+      if(!sites.length){zone?.clear();continue;}
+      if(!zone){zone=new AccAssistedZone(map,()=>{},{readOnly:true});overviewZones.set(loop.id,zone);}
+      const limit=Math.min(loop.km,...loop.members.map(id=>Number(loop.memberLimits?.[id])||20))*1000;
+      zone.update(sites,limit,loop.color||'#007c83');
+      if(zone.polygon&&zone.boundPolygon!==zone.polygon){
+        zone.polygon.bindTooltip(esc(loop.name));
+        zone.polygon.on('click',()=>show(loop.id));zone.boundPolygon=zone.polygon;
+        const element=zone.polygon.getElement();
+        if(element){element.setAttribute('role','button');element.setAttribute('tabindex','0');element.setAttribute('aria-label','Ouvrir la boucle '+loop.name);element.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(loop.id);}});}
+      }
+    }
+    const shown=loopsVisible&&(loops.some(x=>x.active!==false)||Boolean(current()));
+    visibilityButton.setAttribute('aria-pressed',String(shown));
+    visibilityButton.title=shown?'Masquer les boucles d’ACC':'Afficher les boucles d’ACC actives';
+    visibilityButton.setAttribute('aria-label',visibilityButton.title);
+  }
+  function startupBounds(){
+    let bounds=null;
+    for(const loop of loops){
+      if(!loopsVisible||loop.active===false)continue;
+      const b=overviewZones.get(loop.id)?.bounds();
+      if(b){if(bounds)bounds.extend(b);else bounds=L.latLngBounds(b.getSouthWest(),b.getNorthEast());}
+    }
+    return bounds;
+  }
+  window.AccLoops={syncTab,render,refresh,pickSite,pickCentre,pickAddress,fillSiteForm,saveSiteForm,forgetSites,closeStudy,show,startupBounds};
   syncTab();
+  renderOverview();
 })();

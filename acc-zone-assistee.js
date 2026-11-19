@@ -13,19 +13,21 @@
   `;
   document.head.append(electricStyle);
   class AccAssistedZone {
-    constructor(map,onStatus){
-      this.map=map;this.onStatus=onStatus;this.handles=[];this.signature='';
+    constructor(map,onStatus,options={}){
+      this.map=map;this.onStatus=onStatus;this.handles=[];this.signature='';this.readOnly=Boolean(options.readOnly);
       const pane=map.getPane('accAssistedZone')||map.createPane('accAssistedZone');pane.style.zIndex='350';
       this.renderer=L.svg({pane:'accAssistedZone'});
       this.group=L.layerGroup().addTo(map);
       this.down=e=>this.start(e,null);
-      map.getContainer().addEventListener('pointerdown',this.down,true);
-      window.addEventListener('pointermove',e=>this.move(e),{passive:false});
-      window.addEventListener('pointerup',e=>this.end(e));window.addEventListener('pointercancel',e=>this.end(e));
-      window.addEventListener('blur',()=>this.end());
-      map.on?.('zoomend',()=>{if(this.shape)this.draw();});
+      if(!this.readOnly){
+        map.getContainer().addEventListener('pointerdown',this.down,true);
+        window.addEventListener('pointermove',e=>this.move(e),{passive:false});
+        window.addEventListener('pointerup',e=>this.end(e));window.addEventListener('pointercancel',e=>this.end(e));
+        window.addEventListener('blur',()=>this.end());
+      }
+      this.onZoom=()=>{if(this.shape)this.draw();};map.on?.('zoomend',this.onZoom);
       this.reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
-      this.reducedMotion?.addEventListener?.('change',()=>{this.stopWave();if(this.shape)this.draw();});
+      this.onMotion=()=>{this.stopWave();if(this.shape)this.draw();};this.reducedMotion?.addEventListener?.('change',this.onMotion);
     }
     update(pins,limit,color,nearSite){
       this.nearSite=nearSite;
@@ -47,7 +49,7 @@
         return;
       }
       const ll=G.ring(this.shape).map(p=>[p.lat,p.lon]);
-      if(!this.polygon)this.polygon=L.polygon(ll,{renderer:this.renderer,pane:'accAssistedZone',color:this.color,weight:1.4,fillColor:this.color,fillOpacity:.19,interactive:false}).addTo(this.group);
+      if(!this.polygon)this.polygon=L.polygon(ll,{renderer:this.renderer,pane:'accAssistedZone',color:this.color,weight:1.4,fillColor:this.color,fillOpacity:.19,interactive:this.readOnly,bubblingMouseEvents:false}).addTo(this.group);
       else this.polygon.setLatLngs(ll).setStyle({color:this.color,fillColor:this.color});
       const contour=this.electricContour(ll);
       if(!this.reference)this.reference=L.polyline(contour,{renderer:this.renderer,pane:'accAssistedZone',color:this.color,weight:1,opacity:.25,interactive:false}).addTo(this.group);
@@ -59,7 +61,7 @@
         for(const line of [this.halo,this.pulse,this.spark])line.getElement()?.setAttribute('pathLength','1000');
       }else {for(const line of [this.halo,this.pulse,this.spark])line.setLatLngs(contour).setStyle({color:this.color});}
       this.halo.getElement()?.style.setProperty('--acc-electric-color',this.color);
-      if(!this.handles.length)for(const index of [0,4,8,12]){
+      if(!this.readOnly&&!this.handles.length)for(const index of [0,4,8,12]){
         const p=this.shape.project.inverse(this.shape.free[index]);
         const marker=L.marker([p.lat,p.lon],{icon:L.divIcon({className:'acc-zone-handle',html:'↔',iconSize:[26,26],iconAnchor:[13,13]}),zIndexOffset:1800,bubblingMouseEvents:false}).addTo(this.group);
         const el=marker.getElement();el.setAttribute('role','button');el.setAttribute('aria-label','Déformer la zone de la boucle — poignée '+(index/4+1));
@@ -154,7 +156,7 @@
       this.waveRequest=null;this.wavePoints=null;
     }
     start(e,index){
-      if(!this.shape||e.button>0||this.drag)return;
+      if(this.readOnly||!this.shape||e.button>0||this.drag)return;
       if(index===null&&e.target.closest?.('.leaflet-marker-icon,.leaflet-control,.leaflet-popup'))return;
       const ll=this.map.mouseEventToLatLng(e),point={lat:ll.lat,lon:ll.lng};
       if(index===null&&(!G.contains(this.shape,point)||this.nearSite?.(point)))return;
@@ -173,6 +175,7 @@
     notify(f){this.onStatus(f<.999?'Limite atteinte : les acteurs restent inclus et la zone ne peut pas dépasser '+(this.shape.limit/1000)+' km entre ses extrémités.':'Zone déplacée ; les acteurs restent fixes.');}
     end(e){if(!this.drag||(e&&e.pointerId!==this.drag.pointer))return;if(this.drag.map)this.map.dragging.enable();if(this.drag.touch)this.map.touchZoom.enable();this.drag=null;}
     clear(){this.end();this.stopWave();this.group.clearLayers();this.shape=null;this.polygon=null;this.reference=null;this.pulse=null;this.halo=null;this.spark=null;this.invalidLine=null;this.invalidPins=[];this.handles=[];this.signature='';}
+    destroy(){this.clear();this.group.remove?.();this.renderer.remove?.();this.map.off?.('zoomend',this.onZoom);this.reducedMotion?.removeEventListener?.('change',this.onMotion);}
     reset(){this.signature='';}
     bounds(){return this.shape?L.latLngBounds(G.ring(this.shape).map(p=>[p.lat,p.lon])):null;}
   }
