@@ -5,7 +5,7 @@
 <script>
 // Les données géographiques nécessitent HTTP ; cette branche n’est jamais exécutée sur GitHub Pages.
 if (location.protocol === 'file:') {
-  location.replace('http://127.0.0.1:8951/index.html' + location.search + location.hash);
+  location.replace('http://127.0.0.1:8953/index.html' + location.search + location.hash);
 }
 </script>
 <script>
@@ -155,6 +155,8 @@ if (location.protocol === 'file:') {
   .point-icon.in-circle { width:13px; height:13px; background:#2563eb; box-shadow:0 0 0 2px rgba(37,99,235,.22),0 1px 5px rgba(18,33,47,.35); }
   .point-icon.consumer.in-circle { background:#c026d3; box-shadow:0 0 0 2px rgba(192,38,211,.24),0 1px 5px rgba(18,33,47,.35); }
   .point-icon.acc { border-color:#0f766e; box-shadow:0 0 0 2px #0f766e,0 1px 5px rgba(18,33,47,.35); }
+  .point-icon.inactive { background:#87929f; border-color:rgba(255,255,255,.95); opacity:.65; box-shadow:0 1px 4px rgba(45,55,65,.2); }
+  .producer-counts { display:flex; flex-wrap:wrap; gap:8px 16px; padding:12px 14px; margin:6px 0 12px; border:1px solid var(--line); border-radius:12px; background:#f5f7f9; color:#263442; font-size:13px; }
   .search-icon { width:16px; height:16px; border-radius:50%; background:#16a34a; border:3px solid #fff; box-shadow:0 1px 8px rgba(18,33,47,.4); }
   .resize-handle { width:12px; height:12px; border-radius:50%; background:#fff; border:2px solid var(--accent); box-shadow:0 1px 4px rgba(18,33,47,.5); cursor:nwse-resize; }
   .leaflet-interactive.active-circle { cursor:move; touch-action:none; }
@@ -449,6 +451,7 @@ html,body{height:100%;overflow:hidden}main{display:block!important;width:100%;he
     <div class="legend">
       <b><span id="addressCount"></span> adresses</b><br>
       <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon"></span></span><span>Adresse enregistrée</span></div>
+      <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon inactive"></span></span><span>Centrale inactive — exclue des calculs</span></div>
       <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon in-circle"></span></span><span>Centrale productrice comptée</span></div>
       <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon consumer in-circle"></span></span><span>Site consommateur compté</span></div>
       <div class="legend-point-row"><span class="legend-symbol" aria-hidden="true"><span class="point-icon acc"></span></span><span>Centrale déjà en boucle ACC</span></div>
@@ -736,22 +739,29 @@ const markers = new Map();
 const circleExcludedSiteIds = new Set();
 function groupPoints(pointList) {
   return Array.from(pointList.reduce((groups, point) => {
-    const key = point.lat.toFixed(6) + ',' + point.lon.toFixed(6);
+    const key = point.lat.toFixed(6) + ',' + point.lon.toFixed(6) + (isProducerInactive(point) ? ':inactive' : ':eligible');
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(point);
     return groups;
   }, new Map()).values()).map(group => ({...group[0], ids: group.map(point => point.id), addresses: group}));
 }
-// Centrales conservées dans les données et les listes, avec leur repère masqué.
+// Centrales inactives : repère gris visible, mais aucune contribution aux calculs.
 const mapHiddenProducerIds = new Set([72, 73, 74, 75, 78, 79, 80, 83, 84, 85, 102, 105]);
 let producerActivity = {};
 try { producerActivity = JSON.parse(localStorage.getItem('equisolar-producer-activity-v1') || '{}') || {}; } catch (error) {}
-function isProducerMarkerHidden(point) {
+function isProducerInactive(point) {
   if (point.imported) return false;
   return Object.prototype.hasOwnProperty.call(producerActivity, point.id)
     ? producerActivity[point.id] === false : mapHiddenProducerIds.has(Number(point.id));
 }
-let groupedPoints = groupPoints(visiblePoints.filter(point => !isProducerMarkerHidden(point)));
+// Alias conservé pour les contrôles d’éligibilité du module des boucles.
+const isProducerMarkerHidden = isProducerInactive;
+let groupedPoints = groupPoints(visiblePoints);
+function producerActivityCounts() {
+  const producers=visiblePoints.filter(point=>!point.imported);
+  const inactive=producers.filter(isProducerInactive).length;
+  return {active:producers.length-inactive,inactive,total:producers.length};
+}
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function formatNumber(value) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 }).format(value); }
 function formatWholeKwh(value) { return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
@@ -761,6 +771,7 @@ function tariffInternalFromMwh(value) { return value / 10; }
 function formatTariffMwh(value) { return formatNumber(tariffMwhFromInternal(value)) + ' €/MWh'; }
 function powerTariffLine(point) {
   const parts = [];
+  if (isProducerInactive(point)) parts.push('Centrale inactive — exclue des calculs');
   if (Number.isFinite(point.annualKwh)) parts.push('Production annuelle : ' + formatWholeKwh(point.annualKwh) + ' kWh');
   else if (point.imported || point.manual) {
     if (point.kwc !== null && point.kwc !== undefined) parts.push('Puissance : ' + formatNumber(point.kwc) + ' kWc');
@@ -792,11 +803,14 @@ function pointIsInsideCircle(point) {
   return map.distance([center.lat, center.lng], [point.lat, point.lon]) <= activeCircle.getRadius();
 }
 function iconFor(point) {
-  const isIncludedInCircle = pointIsInsideCircle(point) && point.addresses.some(address => !circleExcludedSiteIds.has(address.id));
+  const isInactive=point.addresses.every(isProducerInactive);
+  const isIncludedInCircle = pointIsInsideCircle(point) && point.addresses.some(address => !isProducerInactive(address) && !circleExcludedSiteIds.has(address.id));
   const isConsumer = point.addresses.every(address => address.imported);
-  const isActive = !circleIsVisible() && point.ids.includes(activeId);
-  const isAcc = point.addresses.some(address => !address.imported && address.accStatus === 'yes');
-  return L.divIcon({ className: '', html: '<div class="point-icon' + (isActive ? ' active' : '') + (isAcc ? ' acc' : '') + (isConsumer ? ' consumer' : '') + (isIncludedInCircle ? ' in-circle' : '') + '" style="--point-color:' + (point.color || '#d83b35') + '"></div>', iconSize: [14, 14], iconAnchor: [7, 7], popupAnchor: [0, -7] });
+  const isActive = !isInactive && !circleIsVisible() && point.ids.includes(activeId);
+  const isAcc = !isInactive && point.addresses.some(address => !isProducerInactive(address) && !address.imported && address.accStatus === 'yes');
+  // Un léger décalage évite qu’une centrale active masque un repère inactif situé au même endroit.
+  const overlapsEligible=isInactive&&visiblePoints.some(other=>!isProducerInactive(other)&&other.lat.toFixed(6)===point.lat.toFixed(6)&&other.lon.toFixed(6)===point.lon.toFixed(6));
+  return L.divIcon({ className: '', html: '<div class="point-icon' + (isInactive ? ' inactive' : '') + (isActive ? ' active' : '') + (isAcc ? ' acc' : '') + (isConsumer ? ' consumer' : '') + (isIncludedInCircle ? ' in-circle' : '') + '" style="--point-color:' + (point.color || '#d83b35') + '"></div>', iconSize: [14, 14], iconAnchor: [overlapsEligible ? -3 : 7, 7], popupAnchor: [0, -7] });
 }
 function popupFor(point) {
   if (point.addresses.length > 1) {
@@ -904,7 +918,7 @@ async function loadCisSites() {
   }
 }
 function rebuildAddressMarkers() {
-  groupedPoints = groupPoints(visiblePoints.filter(point => !isProducerMarkerHidden(point)));
+  groupedPoints = groupPoints(visiblePoints);
   if (!map || !markerGroup) return;
   markerGroup.clearLayers();
   markers.clear();
@@ -1155,7 +1169,7 @@ function handleProjectMarkerClick(point) {
   if (window.AccLoops?.pickSite(point.ids)) return;
   window.AccLoops?.closeStudy();
   if (circleIsVisible()) {
-    const sitesInside = point.addresses.filter(address => pointIsInsideCircle(address));
+    const sitesInside = point.addresses.filter(address => !isProducerInactive(address) && pointIsInsideCircle(address));
     if (!sitesInside.length) return;
     const shouldInclude = sitesInside.every(address => circleExcludedSiteIds.has(address.id));
     sitesInside.forEach(address => shouldInclude ? circleExcludedSiteIds.delete(address.id) : circleExcludedSiteIds.add(address.id));
@@ -1225,7 +1239,9 @@ function renderManagementList() {
   if (managementTab === 'loops') { window.AccLoops?.render(); return; }
   const points = visiblePoints.filter(point => managementTab === 'producers' ? !point.imported : point.imported)
     .slice().sort((a, b) => a.project.localeCompare(b.project, 'fr', { sensitivity: 'base' }) || a.address.localeCompare(b.address, 'fr', { sensitivity: 'base' }));
-  managementList.innerHTML = points.length ? points.map(point => {
+  const counts=producerActivityCounts();
+  const summary=managementTab==='producers'?'<div class="producer-counts" role="status" aria-live="polite"><span><strong>'+counts.active+'</strong> centrale'+(counts.active===1?' active':'s actives')+'</span><span><strong>'+counts.inactive+'</strong> centrale'+(counts.inactive===1?' inactive':'s inactives')+'</span></div>':'';
+  managementList.innerHTML = summary + (points.length ? points.map(point => {
     const meta = [];
     if (point.imported) {
       meta.push(Number.isFinite(point.consumptionKwh) ? 'Consommation globale : ' + formatWholeKwh(point.consumptionKwh) + ' kWh' : 'Consommation globale non renseignée');
@@ -1247,7 +1263,7 @@ function renderManagementList() {
       '<button class="item" type="button" data-manage-open="' + point.id + '"><div class="addr">' + escapeHtml(point.project) + '</div><div class="meta">' + escapeHtml(point.address) + ' · ' + meta.join(' · ') + '</div></button>' +
       '<button class="edit-central" type="button" data-manage-edit="' + point.id + '">Modifier</button>' +
       '<button class="remove-address" type="button" data-manage-remove="' + point.id + '" aria-label="Supprimer ' + escapeHtml(point.project) + '">&times;</button></div>';
-  }).join('') : '<div class="management-empty">Aucun site dans cette rubrique.</div>';
+  }).join('') : '<div class="management-empty">Aucun site dans cette rubrique.</div>');
   managementList.querySelectorAll('[data-manage-open]').forEach(button => button.addEventListener('click', () => activate(Number(button.dataset.manageOpen), true)));
   managementList.querySelectorAll('[data-manage-edit]').forEach(button => button.addEventListener('click', () => managementTab === 'producers' ? openEditCentral(Number(button.dataset.manageEdit)) : openConsumerForm(Number(button.dataset.manageEdit))));
   managementList.querySelectorAll('[data-manage-remove]').forEach(button => button.addEventListener('click', () => removeSavedAddress(Number(button.dataset.manageRemove))));
@@ -1774,7 +1790,7 @@ function loadSavedAddressChanges() {
         project: point.project || point.address, spv: point.spv || 'Ajout manuel' });
       nextSavedId = Math.min(nextSavedId, point.id - 1);
     });
-    groupedPoints = groupPoints(visiblePoints.filter(point => !isProducerMarkerHidden(point)));
+    groupedPoints = groupPoints(visiblePoints);
     document.getElementById('addressCount').textContent = visiblePoints.length;
   } catch (error) { /* stockage indisponible ou données invalides */ }
 }
